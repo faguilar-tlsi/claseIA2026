@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Optimización de rutas con IA — Ejemplo de Curso</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #ffffff; --bg2: #f5f4f0; --bg3: #eeecea;
+  --text: #1a1a18; --text2: #6b6a64; --text3: #9c9a92;
+  --border: rgba(0,0,0,0.12); --border2: rgba(0,0,0,0.22);
+  --blue-bg: #E6F1FB; --blue: #0C447C; --blue-mid: #185FA5;
+  --green-bg: #EAF3DE; --green: #27500A; --green-mid: #3B6D11;
+  --amber-bg: #FAEEDA; --amber: #633806; --amber-mid: #854F0B;
+  --red-bg: #FCEBEB; --red: #791F1F; --red-mid: #A32D2D;
+  --warn-bg: #FAEEDA; --warn: #633806;
+  --success-bg: #E1F5EE; --success: #085041;
+  --radius: 8px; --radius-lg: 12px;
+  --font: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "SF Mono", "Cascadia Code", "Fira Code", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1e1e1c; --bg2: #2a2a28; --bg3: #333330;
+    --text: #e8e6df; --text2: #9c9a92; --text3: #6b6a64;
+    --border: rgba(255,255,255,0.1); --border2: rgba(255,255,255,0.2);
+    --blue-bg: #042C53; --blue: #B5D4F4; --blue-mid: #85B7EB;
+    --green-bg: #173404; --green: #C0DD97; --green-mid: #97C459;
+    --amber-bg: #412402; --amber: #FAC775; --amber-mid: #EF9F27;
+    --red-bg: #501313; --red: #F7C1C1; --red-mid: #F09595;
+    --warn-bg: #412402; --warn: #FAC775;
+    --success-bg: #04342C; --success: #9FE1CB;
+  }
+}
+body { font-family: var(--font); background: var(--bg3); color: var(--text); min-height: 100vh; padding: 2rem 1rem; display: flex; justify-content: center; align-items: flex-start; }
+.card { background: var(--bg); border-radius: var(--radius-lg); border: 0.5px solid var(--border); padding: 1.75rem 2rem; max-width: 860px; width: 100%; }
+h1 { font-size: 18px; font-weight: 500; margin-bottom: 4px; }
+.subtitle { font-size: 14px; color: var(--text2); line-height: 1.5; margin-bottom: 1.5rem; }
+
+/* API key banner */
+.api-banner { background: var(--amber-bg); border: 0.5px solid var(--amber-mid); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 1.5rem; }
+.api-banner h2 { font-size: 13px; font-weight: 500; color: var(--amber); margin-bottom: 6px; }
+.api-banner p { font-size: 12px; color: var(--amber); line-height: 1.6; margin-bottom: 10px; }
+.api-banner a { color: var(--amber-mid); }
+.api-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.api-input { flex: 1; min-width: 200px; font-family: var(--mono); font-size: 12px; padding: 7px 10px; border: 0.5px solid var(--border2); border-radius: var(--radius); background: var(--bg); color: var(--text); }
+.api-input:focus { outline: none; border-color: var(--blue-mid); box-shadow: 0 0 0 2px var(--blue-bg); }
+.api-status { font-size: 12px; color: var(--text3); }
+.api-status.ok { color: var(--green-mid); }
+
+/* Tabs */
+.tabs { display: flex; gap: 0; border-bottom: 0.5px solid var(--border); margin-bottom: 1.5rem; overflow-x: auto; }
+.tab { padding: 8px 16px; font-size: 13px; cursor: pointer; color: var(--text2); border: none; border-bottom: 2px solid transparent; background: none; font-family: var(--font); white-space: nowrap; transition: color .15s; }
+.tab.active { color: var(--text); border-bottom-color: var(--text); font-weight: 500; }
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* Flow bar */
+.flow-steps { display: flex; margin-bottom: 1.5rem; overflow-x: auto; }
+.flow-step { flex: 1; min-width: 100px; text-align: center; padding: 10px 6px; background: var(--bg2); border: 0.5px solid var(--border); cursor: pointer; }
+.flow-step:first-child { border-radius: var(--radius) 0 0 var(--radius); }
+.flow-step:last-child { border-radius: 0 var(--radius) var(--radius) 0; }
+.flow-step + .flow-step { border-left: none; }
+.flow-step .fs-n { font-size: 10px; color: var(--text3); margin-bottom: 3px; }
+.flow-step .fs-l { font-size: 12px; font-weight: 500; color: var(--text); }
+.flow-step.active { background: var(--blue-bg); border-color: var(--blue-mid); }
+.flow-step.active .fs-l { color: var(--blue); }
+.flow-step.active .fs-n { color: var(--blue-mid); }
+
+/* Tables */
+.section-label { font-size: 11px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
+.tbl-wrap { overflow-x: auto; margin-bottom: 1.25rem; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; font-weight: 500; font-size: 12px; color: var(--text2); padding: 6px 10px; border-bottom: 0.5px solid var(--border); white-space: nowrap; }
+td { padding: 6px 10px; border-bottom: 0.5px solid var(--border); font-family: var(--mono); font-size: 12px; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--bg2); }
+.badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 10px; }
+.b-red   { background: var(--red-bg);   color: var(--red); }
+.b-amber { background: var(--amber-bg); color: var(--amber); }
+.b-green { background: var(--green-bg); color: var(--green); }
+.b-gray  { background: var(--bg2);      color: var(--text2); }
+
+/* Scenarios */
+.scenario-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 1.25rem; }
+.scenario-card { border: 0.5px solid var(--border2); border-radius: var(--radius); padding: 10px 12px; cursor: pointer; background: var(--bg); transition: border-color .15s; }
+.scenario-card:hover { border-color: var(--border2); background: var(--bg2); }
+.scenario-card.selected { border: 2px solid var(--blue-mid); background: var(--blue-bg); }
+.scenario-card h3 { font-size: 13px; font-weight: 500; margin-bottom: 4px; }
+.scenario-card p { font-size: 11px; color: var(--text2); line-height: 1.5; }
+.scenario-card.selected p { color: var(--blue); }
+
+/* Prompt block */
+.prompt-block { background: var(--bg2); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; font-family: var(--mono); font-size: 12px; line-height: 1.8; margin-bottom: 1rem; white-space: pre-wrap; word-break: break-word; overflow-x: auto; }
+.p-sys  { color: var(--text2); }
+.p-data { color: var(--blue-mid); }
+.p-hl   { background: var(--amber-bg); color: var(--amber); border-radius: 2px; padding: 0 2px; }
+
+/* Callouts */
+.callout { border-left: 3px solid var(--border2); padding: 10px 14px; margin-bottom: 1rem; font-size: 13px; line-height: 1.6; border-radius: 0; }
+.callout.info  { border-color: var(--blue-mid);  background: var(--blue-bg);  color: var(--blue);  }
+.callout.warn  { border-color: var(--amber-mid); background: var(--amber-bg); color: var(--amber); }
+.callout.good  { border-color: var(--green-mid); background: var(--green-bg); color: var(--green); }
+
+/* Controls & buttons */
+.controls { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 1rem; align-items: center; }
+.btn { background: var(--bg); border: 0.5px solid var(--border2); border-radius: var(--radius); padding: 8px 18px; font-size: 13px; cursor: pointer; color: var(--text); font-family: var(--font); transition: background .15s; }
+.btn:hover { background: var(--bg2); }
+.btn.primary { background: var(--text); color: var(--bg); border-color: transparent; }
+.btn.primary:hover { opacity: .85; }
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+
+/* Response */
+.response-area { background: var(--bg2); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; font-family: var(--mono); font-size: 12px; line-height: 1.8; min-height: 100px; white-space: pre-wrap; word-break: break-word; margin-bottom: 1rem; overflow-x: auto; }
+.response-area.idle { color: var(--text3); font-style: italic; font-family: var(--font); }
+.response-area.loading { color: var(--text2); font-style: italic; font-family: var(--font); }
+
+/* Result route */
+.route-visual { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; padding: 10px 12px; background: var(--bg2); border-radius: var(--radius); border: 0.5px solid var(--border); margin-bottom: 1rem; min-height: 44px; }
+.loc-box { font-size: 11px; padding: 4px 10px; border-radius: 6px; font-weight: 500; white-space: nowrap; }
+.arr { color: var(--text3); font-size: 14px; }
+
+/* Steps */
+.step-list { list-style: none; padding: 0; }
+.step-list li { display: flex; gap: 10px; padding: 8px 0; border-bottom: 0.5px solid var(--border); font-size: 13px; align-items: flex-start; }
+.step-list li:last-child { border-bottom: none; }
+.step-num { min-width: 22px; height: 22px; border-radius: 50%; background: var(--bg2); color: var(--text2); font-size: 11px; font-weight: 500; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+.step-body { flex: 1; line-height: 1.6; }
+.step-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
+
+.footer { margin-top: 2rem; padding-top: 1rem; border-top: 0.5px solid var(--border); font-size: 12px; color: var(--text3); line-height: 1.6; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Optimización de rutas de picking con IA</h1>
+  <p class="subtitle">Frente a rutas fijas, la IA calcula la secuencia óptima de recogida considerando ubicaciones actuales, obstáculos en tiempo real y otras carretillas en movimiento. Este ejemplo conecta con la API de Claude para mostrar el razonamiento real del LLM.</p>
+
+  <div class="api-banner">
+    <h2>Configuración — API key de Anthropic</h2>
+    <p>Para que el LLM responda en tiempo real necesitas una API key de Anthropic. Puedes obtenerla en <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> → API Keys → Create Key. Las primeras llamadas tienen crédito gratuito. La key se guarda solo en tu navegador, nunca se envía a ningún servidor propio.</p>
+    <div class="api-row">
+      <input type="password" class="api-input" id="api-key-input" placeholder="sk-ant-api03-..." oninput="checkKey(this.value)">
+      <span class="api-status" id="api-status">Sin configurar</span>
+    </div>
+  </div>
+
+  <div class="flow-steps">
+    <div class="flow-step active" onclick="setTab(0)"><div class="fs-n">Paso 1</div><div class="fs-l">Estado almacén</div></div>
+    <div class="flow-step" onclick="setTab(1)"><div class="fs-n">Paso 2</div><div class="fs-l">Prompt al LLM</div></div>
+    <div class="flow-step" onclick="setTab(2)"><div class="fs-n">Paso 3</div><div class="fs-l">LLM responde</div></div>
+    <div class="flow-step" onclick="setTab(3)"><div class="fs-n">Paso 4</div><div class="fs-l">Resultado</div></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="setTab(0)">1 · Estado del almacén</button>
+    <button class="tab" onclick="setTab(1)">2 · Prompt al LLM</button>
+    <button class="tab" onclick="setTab(2)">3 · LLM responde</button>
+    <button class="tab" onclick="setTab(3)">4 · Resultado</button>
+  </div>
+
+  <!-- PANEL 0 -->
+  <div class="panel active" id="p0">
+    <div class="section-label">Pedido a preparar ahora</div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Línea</th><th>Producto</th><th>Ubicación</th><th>Pasillo</th><th>Cantidad</th><th>Peso</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Leche UHT 1L</td><td>A-03-2</td><td>A</td><td>6 ud</td><td>6.0 kg</td></tr>
+          <tr><td>2</td><td>Cereales avena</td><td>A-03-4</td><td>A</td><td>2 ud</td><td>1.0 kg</td></tr>
+          <tr><td>3</td><td>Detergente ropa</td><td>C-07-1</td><td>C</td><td>1 ud</td><td>2.5 kg</td></tr>
+          <tr><td>4</td><td>Agua 5L</td><td>B-12-3</td><td>B</td><td>6 ud</td><td>30.0 kg</td></tr>
+          <tr><td>5</td><td>Papel higiénico</td><td>C-08-2</td><td>C</td><td>1 paq</td><td>3.0 kg</td></tr>
+          <tr><td>6</td><td>Harina 1kg</td><td>A-04-1</td><td>A</td><td>2 ud</td><td>2.0 kg</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="section-label">Estado actual del almacén — incidencias en tiempo real</div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Elemento</th><th>Ubicación</th><th>Estado</th><th>Impacto en el pedido</th></tr></thead>
+        <tbody>
+          <tr><td>Carretilla #3</td><td>Pasillo B — tramo 10-14</td><td><span class="badge b-red">bloqueado</span></td><td>Agua 5L inaccesible por ruta directa</td></tr>
+          <tr><td>Carretilla #7</td><td>Pasillo A — tramo 1-5</td><td><span class="badge b-amber">lento</span></td><td>Leche y Cereales con demora estimada +2 min</td></tr>
+          <tr><td>Pasillo C</td><td>Tramo completo</td><td><span class="badge b-green">libre</span></td><td>Sin incidencias</td></tr>
+          <tr><td>Carretilla #1 (picker)</td><td>Zona expedición</td><td><span class="badge b-green">disponible</span></td><td>Capacidad máx. 50 kg · carga actual 0 kg</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="section-label">Elige el escenario para enviar al LLM</div>
+    <div class="scenario-grid">
+      <div class="scenario-card selected" id="sc0" onclick="selectScenario(0)">
+        <h3>Escenario 1 — Obstáculo</h3>
+        <p>Pasillo B bloqueado. ¿Cómo rodea el LLM el obstáculo para llegar al Agua 5L?</p>
+      </div>
+      <div class="scenario-card" id="sc1" onclick="selectScenario(1)">
+        <h3>Escenario 2 — Capacidad</h3>
+        <p>La carretilla lleva ya 35 kg. ¿Divide el LLM el pedido en dos vueltas?</p>
+      </div>
+      <div class="scenario-card" id="sc2" onclick="selectScenario(2)">
+        <h3>Escenario 3 — Urgencia</h3>
+        <p>El camión sale en 8 minutos. ¿Qué producto decide dejar el LLM sin recoger?</p>
+      </div>
+    </div>
+    <div class="callout info">En un sistema real este estado se lee automáticamente del SGA y los sensores cada vez que llega un pedido. El prompt se genera solo — nadie lo escribe a mano.</div>
+  </div>
+
+  <!-- PANEL 1 -->
+  <div class="panel" id="p1">
+    <div class="section-label">Prompt generado automáticamente y enviado a la API</div>
+    <div class="prompt-block" id="prompt-display"></div>
+    <div class="callout warn">Las restricciones (en naranja) son lo que convierte un resultado genérico en uno aplicable. Sin ellas el LLM ignoraría el peso máximo de la carretilla o la urgencia del camión.</div>
+  </div>
+
+  <!-- PANEL 2 -->
+  <div class="panel" id="p2">
+    <div class="controls">
+      <button class="btn primary" id="btn-ask" onclick="askLLM()">Consultar al LLM →</button>
+      <span style="font-size:12px;color:var(--text2)" id="status-label"></span>
+    </div>
+    <div class="section-label">Respuesta del LLM (JSON en tiempo real)</div>
+    <div class="response-area idle" id="response-box">Pulsa "Consultar al LLM" para ver la respuesta generarse en tiempo real...</div>
+    <div class="callout warn" id="llm-note" style="display:none">El LLM no devuelve solo coordenadas — devuelve razonamiento. Explica <em>por qué</em> cambia el orden, no solo cuál es el nuevo orden. Eso es lo que un algoritmo clásico de optimización no puede hacer.</div>
+  </div>
+
+  <!-- PANEL 3 -->
+  <div class="panel" id="p3">
+    <div class="section-label">Ruta resultante — secuencia de recogida</div>
+    <div class="route-visual" id="route-visual">
+      <span style="font-size:12px;color:var(--text3)">Consulta al LLM primero (pestaña 3)</span>
+    </div>
+    <div id="result-detail" style="display:none">
+      <div class="section-label">Decisiones tomadas por el LLM — con justificación</div>
+      <ul class="step-list" id="decisions-list"></ul>
+      <div style="margin-top:1.25rem">
+        <div class="section-label">¿Qué ocurre cuando se despeja el bloqueo?</div>
+        <div class="callout good">El sistema vuelve a consultar al LLM con el nuevo estado del almacén. La ruta se recalcula en segundos — no hay que reprogramar nada. Esto es lo que diferencia la optimización en tiempo real de una ruta fija programada.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    Ejemplo didáctico para cursos de gestión logística e IA · Conecta con la API de Anthropic (claude-sonnet-4-20250514) · La API key se usa solo localmente en tu navegador
+  </div>
+</div>
+
+<script>
+let selectedScenario = 0;
+let apiKey = '';
+
+function checkKey(val) {
+  apiKey = val.trim();
+  const st = document.getElementById('api-status');
+  if (apiKey.startsWith('sk-ant-')) {
+    st.textContent = '✓ API key detectada';
+    st.className = 'api-status ok';
+  } else if (apiKey.length > 0) {
+    st.textContent = 'Formato incorrecto (debe empezar por sk-ant-)';
+    st.className = 'api-status';
+  } else {
+    st.textContent = 'Sin configurar';
+    st.className = 'api-status';
+  }
+}
+
+function setTab(n) {
+  document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', i === n));
+  document.querySelectorAll('.panel').forEach((p, i) => p.classList.toggle('active', i === n));
+  document.querySelectorAll('.flow-step').forEach((s, i) => s.classList.toggle('active', i === n));
+}
+
+const SCENARIOS = [
+  {
+    label: 'Escenario 1 — Obstáculo en pasillo B',
+    sys: 'Eres el sistema de optimización de rutas de picking de un almacén logístico. Responde ÚNICAMENTE con JSON válido, sin bloques de código ni texto adicional.',
+    data: `Carretilla picker #1: en zona expedición, carga actual 0 kg, máx 50 kg
+
+Incidencias activas:
+- Pasillo B tramo 10-14: BLOQUEADO (carretilla #3 averiada)
+- Pasillo A tramo 1-5: LENTO (carretilla #7 en movimiento, +2 min estimados)
+- Pasillo C: libre
+
+Productos a recoger:
+1. Leche UHT ×6     → A-03-2  pasillo A  6.0 kg
+2. Cereales avena   → A-03-4  pasillo A  1.0 kg
+3. Detergente ropa  → C-07-1  pasillo C  2.5 kg
+4. Agua 5L ×6       → B-12-3  pasillo B  30.0 kg  ← zona bloqueada por tramo 10-14
+5. Papel higiénico  → C-08-2  pasillo C  3.0 kg
+6. Harina ×2        → A-04-1  pasillo A  2.0 kg`,
+    restr: `- No entrar en pasillo B tramo 10-14 (bloqueado físicamente)
+- Peso máximo por vuelta: 50 kg
+- Minimizar distancia total recorrida
+- Terminar en zona de expedición`,
+    task: `Devuelve este JSON exacto:
+{
+  "secuencia_recogida": [
+    {"paso": 1, "producto": "...", "ubicacion": "...", "justificacion": "..."},
+    ...
+  ],
+  "ruta_alternativa_agua": "explicación de cómo acceder a B-12-3 evitando el bloqueo",
+  "vueltas_necesarias": 1,
+  "distancia_estimada_metros": 0,
+  "advertencias": ["..."]
+}`
+  },
+  {
+    label: 'Escenario 2 — Carretilla al límite de peso',
+    sys: 'Eres el sistema de optimización de rutas de picking de un almacén logístico. Responde ÚNICAMENTE con JSON válido, sin bloques de código ni texto adicional.',
+    data: `Carretilla picker #1: en pasillo A, carga actual 35 kg, máx 50 kg
+⚠ Solo quedan 15 kg de capacidad disponible
+
+Incidencias activas: ninguna — todos los pasillos libres
+
+Productos pendientes de recoger:
+1. Agua 5L ×6       → B-12-3  pasillo B  30.0 kg
+2. Detergente ropa  → C-07-1  pasillo C   2.5 kg
+3. Papel higiénico  → C-08-2  pasillo C   3.0 kg
+4. Harina ×2        → A-04-1  pasillo A   2.0 kg`,
+    restr: `- Peso máximo por vuelta: 50 kg (restricción de seguridad, no negociable)
+- La carretilla ya lleva 35 kg — solo caben 15 kg más en esta vuelta
+- Minimizar el número de vueltas a expedición
+- Si hay que dividir en dos vueltas, agrupar los de la segunda por cercanía`,
+    task: `Devuelve este JSON exacto:
+{
+  "secuencia_recogida": [
+    {"paso": 1, "producto": "...", "ubicacion": "...", "justificacion": "..."},
+    ...
+  ],
+  "vueltas_necesarias": 2,
+  "vuelta_1": {"productos": [...], "peso_total_kg": 0},
+  "vuelta_2": {"productos": [...], "peso_total_kg": 0},
+  "distancia_estimada_metros": 0,
+  "advertencias": ["..."]
+}`
+  },
+  {
+    label: 'Escenario 3 — Urgencia de expedición',
+    sys: 'Eres el sistema de optimización de rutas de picking de un almacén logístico. Hay urgencia de expedición: prioriza velocidad sobre distancia óptima. Responde ÚNICAMENTE con JSON válido, sin bloques de código ni texto adicional.',
+    data: `Carretilla picker #1: en pasillo A-03, carga actual 7 kg, máx 50 kg
+
+⚠ URGENCIA: camión de expedición sale en 8 minutos
+
+Productos pendientes con tiempos estimados de recogida:
+1. Detergente ropa  → C-07-1  pasillo C  2.5 kg  tiempo estimado: 3 min
+2. Agua 5L ×6       → B-12-3  pasillo B  30.0 kg tiempo estimado: 5 min
+3. Papel higiénico  → C-08-2  pasillo C  3.0 kg  tiempo estimado: 3.5 min
+4. Harina ×2        → A-04-1  pasillo A  2.0 kg  tiempo estimado: 1 min`,
+    restr: `- Tiempo disponible: 8 minutos ESTRICTO (el camión no espera)
+- Priorizar llegar a expedición antes del cierre sobre recoger todo
+- Si no da tiempo a recoger todo, indicar qué dejar y proponer segunda ronda
+- El Agua 5L es el más pesado y lento — valorar si merece la pena`,
+    task: `Devuelve este JSON exacto:
+{
+  "secuencia_recogida": [
+    {"paso": 1, "producto": "...", "ubicacion": "...", "justificacion": "...", "tiempo_estimado_min": 0},
+    ...
+  ],
+  "productos_descartados": [
+    {"producto": "...", "motivo": "..."}
+  ],
+  "tiempo_total_estimado_min": 0,
+  "recomendacion": "decisión ejecutiva clara en una frase",
+  "advertencias": ["..."]
+}`
+  }
+];
+
+function selectScenario(n) {
+  selectedScenario = n;
+  [0, 1, 2].forEach(i => document.getElementById('sc' + i).classList.toggle('selected', i === n));
+  renderPrompt(n);
+}
+
+function renderPrompt(n) {
+  const s = SCENARIOS[n];
+  const box = document.getElementById('prompt-display');
+  box.innerHTML =
+    `<span class="p-sys">### ROL\n${s.sys}\n\n### ESTADO ACTUAL DEL ALMACÉN\n</span>` +
+    `<span class="p-data">${escHtml(s.data)}\n</span>\n` +
+    `<span class="p-hl">### RESTRICCIONES\n${escHtml(s.restr)}</span>\n\n` +
+    `<span class="p-sys">### TAREA\n${escHtml(s.task)}</span>`;
+}
+
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+async function askLLM() {
+  if (!apiKey || !apiKey.startsWith('sk-ant-')) {
+    alert('Introduce primero tu API key de Anthropic (empieza por sk-ant-).\nPuedes obtenerla en console.anthropic.com');
+    return;
+  }
+  const btn = document.getElementById('btn-ask');
+  const box = document.getElementById('response-box');
+  const lbl = document.getElementById('status-label');
+  btn.disabled = true;
+  lbl.textContent = 'Consultando al LLM...';
+  box.className = 'response-area loading';
+  box.textContent = 'Conectando con la API de Anthropic...';
+  document.getElementById('llm-note').style.display = 'none';
+
+  const s = SCENARIOS[selectedScenario];
+  const userMsg = `Estado del almacén:\n${s.data}\n\nRestricciones:\n${s.restr}\n\nTarea:\n${s.task}\n\nResponde ÚNICAMENTE con JSON válido, sin texto adicional ni bloques de código markdown.`;
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1200,
+        system: `Eres el sistema de optimización de rutas de picking de un almacén logístico. Responde SIEMPRE y ÚNICAMENTE con JSON válido, sin bloques de código, sin texto extra.`,
+        messages: [{ role: 'user', content: userMsg }]
+      })
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.error?.message || `Error HTTP ${resp.status}`);
+    }
+
+    const data = await resp.json();
+    const raw = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+    box.className = 'response-area';
+    box.textContent = raw;
+    document.getElementById('llm-note').style.display = 'block';
+    lbl.textContent = '✓ Respuesta recibida';
+    btn.disabled = false;
+    parseAndShowResult(raw);
+  } catch (e) {
+    box.className = 'response-area';
+    box.textContent = 'Error: ' + e.message + '\n\nVerifica que la API key sea correcta y tenga crédito disponible.';
+    lbl.textContent = 'Error';
+    btn.disabled = false;
+  }
+}
+
+const COLORS = [
+  { bg: '#E6F1FB', text: '#0C447C' },
+  { bg: '#EAF3DE', text: '#27500A' },
+  { bg: '#FAEEDA', text: '#633806' },
+  { bg: '#FAECE7', text: '#712B13' },
+  { bg: '#EEEDFE', text: '#3C3489' },
+  { bg: '#E1F5EE', text: '#085041' },
+  { bg: '#FCEBEB', text: '#791F1F' },
+];
+
+function parseAndShowResult(raw) {
+  try {
+    const clean = raw.replace(/```json|```/g, '').trim();
+    const json = JSON.parse(clean);
+    const vis = document.getElementById('route-visual');
+    const dec = document.getElementById('decisions-list');
+    vis.innerHTML = '';
+    dec.innerHTML = '';
+
+    function addBox(text, bg, color) {
+      const s = document.createElement('span');
+      s.className = 'loc-box';
+      s.style.background = bg;
+      s.style.color = color;
+      s.textContent = text;
+      vis.appendChild(s);
+    }
+    function addArr() {
+      const s = document.createElement('span');
+      s.className = 'arr';
+      s.textContent = '→';
+      vis.appendChild(s);
+    }
+    function addStep(num, title, sub, color) {
+      const li = document.createElement('li');
+      const n = document.createElement('div');
+      n.className = 'step-num';
+      n.textContent = num;
+      if (color) n.style.color = color;
+      const b = document.createElement('div');
+      b.className = 'step-body';
+      b.innerHTML = title + (sub ? `<div class="step-sub">${sub}</div>` : '');
+      li.appendChild(n);
+      li.appendChild(b);
+      dec.appendChild(li);
+    }
+
+    addBox('INICIO', 'var(--bg2)', 'var(--text2)');
+
+    const seq = json.secuencia_recogida || [];
+    seq.forEach((s, i) => {
+      addArr();
+      const c = COLORS[i % COLORS.length];
+      addBox(s.ubicacion || s.producto || 'paso ' + (i + 1), c.bg, c.text);
+      const c2 = COLORS[i % COLORS.length];
+      const title = `<strong>${s.producto || s.ubicacion || ''}</strong>` +
+        (s.ubicacion && s.producto ? ` — ${s.ubicacion}` : '');
+      const sub = [
+        s.justificacion,
+        s.tiempo_estimado_min != null ? `Tiempo estimado: ${s.tiempo_estimado_min} min` : null
+      ].filter(Boolean).join(' · ');
+      addStep(i + 1, title, sub, null);
+    });
+
+    addArr();
+    addBox('EXPEDICIÓN', '#E1F5EE', '#085041');
+
+    // Productos descartados (escenario urgencia)
+    if (json.productos_descartados?.length) {
+      json.productos_descartados.forEach(p => {
+        addStep('✕', `<span style="color:var(--red-mid)">No recogido: <strong>${p.producto}</strong></span>`, p.motivo, 'var(--red-mid)');
+      });
+    }
+
+    // Ruta alternativa (escenario obstáculo)
+    if (json.ruta_alternativa_agua) {
+      addStep('↩', '<strong>Ruta alternativa Agua 5L</strong>', json.ruta_alternativa_agua, 'var(--amber-mid)');
+    }
+
+    // Vueltas (escenario peso)
+    if (json.vuelta_1 || json.vuelta_2) {
+      if (json.vuelta_1) addStep('1ª', `<strong>Primera vuelta</strong> — ${json.vuelta_1.peso_total_kg} kg`, (json.vuelta_1.productos || []).join(', '), null);
+      if (json.vuelta_2) addStep('2ª', `<strong>Segunda vuelta</strong> — ${json.vuelta_2.peso_total_kg} kg`, (json.vuelta_2.productos || []).join(', '), null);
+    }
+
+    // Recomendación ejecutiva
+    if (json.recomendacion) {
+      addStep('★', `<strong>Decisión ejecutiva</strong>`, json.recomendacion, 'var(--green-mid)');
+    }
+
+    // Advertencias
+    if (json.advertencias?.length) {
+      json.advertencias.forEach(a => {
+        addStep('!', `<span style="color:var(--amber-mid)">${a}</span>`, null, 'var(--amber-mid)');
+      });
+    }
+
+    // Distancia
+    if (json.distancia_estimada_metros) {
+      addStep('→', `<strong>Distancia estimada total</strong>`, `${json.distancia_estimada_metros} metros`, null);
+    }
+
+    document.getElementById('result-detail').style.display = 'block';
+    setTab(3);
+  } catch (e) {
+    document.getElementById('route-visual').innerHTML =
+      '<span style="font-size:12px;color:var(--text3)">No se pudo parsear el JSON. Revisa la respuesta en la pestaña 3.</span>';
+    document.getElementById('result-detail').style.display = 'none';
+    setTab(3);
+  }
+}
+
+// Init
+renderPrompt(0);
+</script>
+</body>
+</html>

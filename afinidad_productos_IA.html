@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Almacenaje por afinidad con IA — Ejemplo de Curso</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #ffffff; --bg2: #f5f4f0; --bg3: #eeecea;
+  --text: #1a1a18; --text2: #6b6a64; --text3: #9c9a92;
+  --border: rgba(0,0,0,0.12); --border2: rgba(0,0,0,0.22);
+  --blue-bg: #E6F1FB; --blue: #0C447C; --blue-mid: #185FA5;
+  --green-bg: #EAF3DE; --green: #27500A; --green-mid: #3B6D11;
+  --amber-bg: #FAEEDA; --amber: #633806; --amber-mid: #854F0B;
+  --gray-bg: #F1EFE8; --gray: #444441;
+  --success-bg: #E1F5EE; --success: #085041;
+  --warn-bg: #FAEEDA; --warn: #633806;
+  --info-bg: #E6F1FB; --info: #0C447C;
+  --radius: 8px; --radius-lg: 12px;
+  --font: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "SF Mono", "Cascadia Code", "Fira Code", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1e1e1c; --bg2: #2a2a28; --bg3: #333330;
+    --text: #e8e6df; --text2: #9c9a92; --text3: #6b6a64;
+    --border: rgba(255,255,255,0.1); --border2: rgba(255,255,255,0.2);
+    --blue-bg: #042C53; --blue: #B5D4F4; --blue-mid: #85B7EB;
+    --green-bg: #173404; --green: #C0DD97; --green-mid: #97C459;
+    --amber-bg: #412402; --amber: #FAC775; --amber-mid: #EF9F27;
+    --gray-bg: #2C2C2A; --gray: #D3D1C7;
+    --success-bg: #04342C; --success: #9FE1CB;
+    --warn-bg: #412402; --warn: #FAC775;
+    --info-bg: #042C53; --info: #B5D4F4;
+  }
+}
+body { font-family: var(--font); background: var(--bg3); color: var(--text); min-height: 100vh; padding: 2rem 1rem; display: flex; justify-content: center; align-items: flex-start; }
+.card { background: var(--bg); border-radius: var(--radius-lg); border: 0.5px solid var(--border); padding: 1.75rem 2rem; max-width: 820px; width: 100%; }
+h1 { font-size: 18px; font-weight: 500; margin-bottom: 4px; }
+.subtitle { font-size: 14px; color: var(--text2); line-height: 1.5; margin-bottom: 1.5rem; }
+
+.tabs { display: flex; gap: 0; border-bottom: 0.5px solid var(--border); margin-bottom: 1.5rem; overflow-x: auto; }
+.tab { padding: 8px 16px; font-size: 13px; cursor: pointer; color: var(--text2); border: none; border-bottom: 2px solid transparent; background: none; font-family: var(--font); white-space: nowrap; transition: color .15s; }
+.tab.active { color: var(--text); border-bottom-color: var(--text); font-weight: 500; }
+.panel { display: none; }
+.panel.active { display: block; }
+
+.section-label { font-size: 11px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 1.5rem; }
+th { text-align: left; font-weight: 500; font-size: 12px; color: var(--text2); padding: 6px 10px; border-bottom: 0.5px solid var(--border); }
+td { padding: 6px 10px; border-bottom: 0.5px solid var(--border); color: var(--text); font-family: var(--mono); font-size: 12px; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--bg2); }
+.tbl-note td { font-family: var(--font); font-style: italic; color: var(--text3); }
+.tbl-overflow { overflow-x: auto; margin-bottom: 1.5rem; }
+
+.code-block { background: var(--bg2); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; font-family: var(--mono); font-size: 12px; line-height: 1.8; color: var(--text); margin-bottom: 1rem; overflow-x: auto; white-space: pre; }
+.kw { color: var(--blue-mid); font-weight: 500; }
+.fn { color: var(--green-mid); }
+.cm { color: var(--text3); font-style: italic; }
+.hl { background: var(--amber-bg); color: var(--amber); border-radius: 2px; padding: 0 2px; }
+
+.prompt-block { background: var(--bg2); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; font-family: var(--mono); font-size: 12px; line-height: 1.8; margin-bottom: 1rem; white-space: pre-wrap; word-break: break-word; }
+.p-sys  { color: var(--text2); }
+.p-data { color: var(--blue-mid); }
+.p-hl   { background: var(--amber-bg); color: var(--amber); border-radius: 2px; padding: 0 2px; }
+
+.callout { border-left: 3px solid var(--border2); border-radius: 0; padding: 10px 14px; margin-bottom: 1rem; font-size: 13px; line-height: 1.6; color: var(--text2); }
+.callout.info  { border-color: var(--blue-mid);  background: var(--blue-bg);  color: var(--blue);  }
+.callout.warn  { border-color: var(--amber-mid); background: var(--amber-bg); color: var(--amber); }
+.callout.good  { border-color: var(--green-mid); background: var(--green-bg); color: var(--green); }
+
+.badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 10px; font-family: var(--font); }
+.b-green { background: var(--green-bg); color: var(--green); }
+.b-blue  { background: var(--blue-bg);  color: var(--blue);  }
+.b-amber { background: var(--amber-bg); color: var(--amber); }
+.b-gray  { background: var(--gray-bg);  color: var(--gray);  }
+
+.group-card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; margin-bottom: 10px; }
+.group-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+.group-name { font-size: 14px; font-weight: 500; }
+.group-aff { margin-left: auto; font-size: 12px; color: var(--text2); }
+.badges { display: flex; gap: 6px; flex-wrap: wrap; }
+.group-note { font-size: 11px; color: var(--text2); margin-top: 6px; }
+
+.step-list { list-style: none; padding: 0; }
+.step-list li { display: flex; gap: 12px; padding: 10px 0; border-bottom: 0.5px solid var(--border); font-size: 13px; align-items: flex-start; }
+.step-list li:last-child { border-bottom: none; }
+.step-num { min-width: 22px; height: 22px; border-radius: 50%; background: var(--bg2); color: var(--text2); font-size: 11px; font-weight: 500; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+.step-body { flex: 1; line-height: 1.6; }
+.step-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
+
+.teach-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 1.5rem; }
+.teach-card { background: var(--bg2); border-radius: var(--radius); padding: 12px 14px; }
+.teach-card h3 { font-size: 13px; font-weight: 500; margin-bottom: 6px; }
+.teach-card p  { font-size: 12px; color: var(--text2); line-height: 1.6; }
+
+.response-row { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 0.5px solid var(--border); }
+.response-row:last-child { border-bottom: none; }
+.response-row .icon { color: var(--green-mid); font-size: 16px; margin-top: 1px; }
+.response-row .body { flex: 1; font-size: 13px; line-height: 1.5; }
+.response-row .body span { display: block; font-size: 12px; color: var(--text2); margin-top: 2px; }
+
+.flow-steps { display: flex; gap: 0; margin-bottom: 1.5rem; overflow-x: auto; }
+.flow-step { flex: 1; min-width: 120px; text-align: center; padding: 12px 8px; background: var(--bg2); border: 0.5px solid var(--border); position: relative; font-size: 12px; }
+.flow-step:first-child { border-radius: var(--radius) 0 0 var(--radius); }
+.flow-step:last-child  { border-radius: 0 var(--radius) var(--radius) 0; }
+.flow-step + .flow-step { border-left: none; }
+.flow-step .fs-num { font-size: 11px; color: var(--text3); margin-bottom: 4px; }
+.flow-step .fs-label { font-weight: 500; color: var(--text); }
+.flow-step .fs-tech { font-size: 11px; color: var(--text2); margin-top: 3px; }
+.flow-step.active { background: var(--blue-bg); border-color: var(--blue-mid); }
+.flow-step.active .fs-label { color: var(--blue); }
+.flow-step.active .fs-tech { color: var(--blue-mid); }
+
+.footer { margin-top: 2rem; padding-top: 1rem; border-top: 0.5px solid var(--border); font-size: 12px; color: var(--text3); line-height: 1.6; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Almacenaje por afinidad con IA</h1>
+  <p class="subtitle">La IA detecta qué artículos se piden juntos habitualmente y los ubica cerca para reducir el recorrido en pedidos multilinea. Este ejemplo muestra el flujo completo: desde los datos brutos hasta las ubicaciones resultantes.</p>
+
+  <div class="flow-steps">
+    <div class="flow-step" onclick="setTab(0)"><div class="fs-num">Paso 1</div><div class="fs-label">Datos brutos</div><div class="fs-tech">Historial de pedidos</div></div>
+    <div class="flow-step active" onclick="setTab(1)"><div class="fs-num">Paso 2</div><div class="fs-label">SQL → resumen</div><div class="fs-tech">Co-ocurrencias</div></div>
+    <div class="flow-step" onclick="setTab(2)"><div class="fs-num">Paso 3</div><div class="fs-label">Prompt al LLM</div><div class="fs-tech">Con restricciones</div></div>
+    <div class="flow-step" onclick="setTab(3)"><div class="fs-num">Paso 4</div><div class="fs-label">Respuesta LLM</div><div class="fs-tech">Grupos + razones</div></div>
+    <div class="flow-step" onclick="setTab(4)"><div class="fs-num">Paso 5</div><div class="fs-label">Resultado</div><div class="fs-tech">Ubicaciones</div></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="setTab(0)">1 · Datos brutos</button>
+    <button class="tab" onclick="setTab(1)">2 · SQL de co-ocurrencias</button>
+    <button class="tab" onclick="setTab(2)">3 · Prompt al LLM</button>
+    <button class="tab" onclick="setTab(3)">4 · Respuesta del LLM</button>
+    <button class="tab" onclick="setTab(4)">5 · Resultado aplicado</button>
+    <button class="tab" onclick="setTab(5)">Como enseñarlo</button>
+  </div>
+
+  <div class="panel active" id="p0">
+    <div class="section-label">Tabla de pedidos — últimos 90 días (extracto de 4.840 registros)</div>
+    <div class="tbl-overflow">
+      <table>
+        <thead><tr><th>pedido_id</th><th>fecha</th><th>cliente_id</th><th>producto</th><th>cantidad</th><th>uds</th></tr></thead>
+        <tbody>
+          <tr><td>PED-10041</td><td>2026-02-03</td><td>CLI-882</td><td>Leche UHT 1L</td><td>6</td><td>ud</td></tr>
+          <tr><td>PED-10041</td><td>2026-02-03</td><td>CLI-882</td><td>Cereales avena</td><td>2</td><td>ud</td></tr>
+          <tr><td>PED-10041</td><td>2026-02-03</td><td>CLI-882</td><td>Azúcar 1kg</td><td>1</td><td>ud</td></tr>
+          <tr><td>PED-10042</td><td>2026-02-03</td><td>CLI-201</td><td>Agua 5L</td><td>6</td><td>ud</td></tr>
+          <tr><td>PED-10042</td><td>2026-02-03</td><td>CLI-201</td><td>Detergente ropa</td><td>1</td><td>ud</td></tr>
+          <tr><td>PED-10042</td><td>2026-02-03</td><td>CLI-201</td><td>Papel higiénico</td><td>1</td><td>paq</td></tr>
+          <tr><td>PED-10042</td><td>2026-02-03</td><td>CLI-201</td><td>Suavizante</td><td>1</td><td>ud</td></tr>
+          <tr><td>PED-10043</td><td>2026-02-04</td><td>CLI-554</td><td>Leche UHT 1L</td><td>12</td><td>ud</td></tr>
+          <tr><td>PED-10043</td><td>2026-02-04</td><td>CLI-554</td><td>Cereales avena</td><td>3</td><td>ud</td></tr>
+          <tr><td>PED-10043</td><td>2026-02-04</td><td>CLI-554</td><td>Mermelada fresa</td><td>2</td><td>ud</td></tr>
+          <tr><td>PED-10044</td><td>2026-02-04</td><td>CLI-119</td><td>Detergente ropa</td><td>2</td><td>ud</td></tr>
+          <tr><td>PED-10044</td><td>2026-02-04</td><td>CLI-119</td><td>Suavizante</td><td>2</td><td>ud</td></tr>
+          <tr><td>PED-10044</td><td>2026-02-04</td><td>CLI-119</td><td>Limpiahogar</td><td>1</td><td>ud</td></tr>
+          <tr class="tbl-note"><td colspan="6">… 4.827 filas más en la base de datos</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout info">Este formato es el que existe en cualquier SGA o ERP. Un pedido multilinea ocupa varias filas — una por producto. El problema es que así los datos no dicen nada sobre qué productos van juntos. Eso lo calcula el paso siguiente.</div>
+  </div>
+
+  <div class="panel" id="p1">
+    <div class="section-label">¿Qué hace esta consulta?</div>
+    <div class="callout info">El LLM no puede leer 4.840 filas de pedidos. Esta consulta SQL las convierte en una tabla compacta de co-ocurrencias: cuántas veces aparecen juntos dos productos en el mismo pedido. Eso sí lo puede analizar el LLM.</div>
+
+    <div class="section-label">Consulta SQL — paso 1: normalizar productos por pedido</div>
+    <div class="code-block"><span class="cm">-- Primero: una fila por par de productos dentro del mismo pedido</span>
+<span class="kw">SELECT</span>
+    a.pedido_id,
+    a.producto   <span class="kw">AS</span> producto_a,
+    b.producto   <span class="kw">AS</span> producto_b,
+    a.fecha
+<span class="kw">FROM</span>   pedidos a
+<span class="kw">JOIN</span>   pedidos b
+       <span class="kw">ON</span>  a.pedido_id = b.pedido_id
+       <span class="kw">AND</span> <span class="hl">a.producto &lt; b.producto</span>   <span class="cm">-- evita duplicados (A,B) y (B,A)</span>
+<span class="kw">WHERE</span>  a.fecha &gt;= <span class="fn">CURRENT_DATE</span> - <span class="kw">INTERVAL</span> <span class="fn">'90 days'</span></div>
+
+    <div class="section-label">Consulta SQL — paso 2: agregar y calcular afinidad</div>
+    <div class="code-block"><span class="kw">WITH</span> pares <span class="kw">AS</span> (
+    <span class="cm">-- subconsulta del paso 1 arriba</span>
+    ...
+),
+totales <span class="kw">AS</span> (
+    <span class="cm">-- cuántos pedidos tiene cada producto en total</span>
+    <span class="kw">SELECT</span> producto, <span class="fn">COUNT</span>(<span class="kw">DISTINCT</span> pedido_id) <span class="kw">AS</span> total_pedidos
+    <span class="kw">FROM</span>   pedidos
+    <span class="kw">WHERE</span>  fecha &gt;= <span class="fn">CURRENT_DATE</span> - <span class="kw">INTERVAL</span> <span class="fn">'90 days'</span>
+    <span class="kw">GROUP BY</span> producto
+)
+<span class="kw">SELECT</span>
+    p.producto_a,
+    p.producto_b,
+    <span class="fn">COUNT</span>(*)                                    <span class="kw">AS</span> pedidos_juntos,
+    t.total_pedidos                             <span class="kw">AS</span> total_a,
+    <span class="hl"><span class="fn">ROUND</span>(<span class="fn">COUNT</span>(*) * 100.0 / t.total_pedidos, 1) <span class="kw">AS</span> pct_afinidad</span>
+<span class="kw">FROM</span>   pares p
+<span class="kw">JOIN</span>   totales t <span class="kw">ON</span> t.producto = p.producto_a
+<span class="kw">GROUP BY</span> p.producto_a, p.producto_b, t.total_pedidos
+<span class="kw">HAVING</span>   <span class="fn">COUNT</span>(*) &gt;= <span class="hl">50</span>              <span class="cm">-- descarta pares anecdóticos</span>
+<span class="kw">ORDER BY</span> pct_afinidad <span class="kw">DESC</span>
+<span class="kw">LIMIT</span>    20;</div>
+
+    <div class="section-label">Resultado de la consulta (lo que recibe el LLM)</div>
+    <div class="tbl-overflow">
+      <table>
+        <thead><tr><th>producto_a</th><th>producto_b</th><th>pedidos_juntos</th><th>total_a</th><th>pct_afinidad</th></tr></thead>
+        <tbody>
+          <tr><td>Detergente</td><td>Suavizante</td><td>1847</td><td>2103</td><td>87.8%</td></tr>
+          <tr><td>Harina</td><td>Huevos</td><td>698</td><td>901</td><td>77.5%</td></tr>
+          <tr><td>Leche UHT</td><td>Cereales</td><td>1621</td><td>2310</td><td>70.2%</td></tr>
+          <tr><td>Detergente</td><td>Papel higiénico</td><td>1204</td><td>2103</td><td>57.3%</td></tr>
+          <tr><td>Agua 5L</td><td>Papel higiénico</td><td>987</td><td>1876</td><td>52.6%</td></tr>
+          <tr><td>Harina</td><td>Azúcar</td><td>441</td><td>901</td><td>49.0%</td></tr>
+          <tr><td>Cereales</td><td>Zumo naranja</td><td>512</td><td>1405</td><td>36.4%</td></tr>
+          <tr><td>Suavizante</td><td>Papel higiénico</td><td>654</td><td>1920</td><td>34.1%</td></tr>
+          <tr><td>Leche UHT</td><td>Azúcar</td><td>743</td><td>2310</td><td>32.2%</td></tr>
+          <tr><td>Agua 5L</td><td>Detergente</td><td>498</td><td>1876</td><td>26.6%</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout good">De 4.840 filas a 10 filas. El LLM recibe un resumen que cabe en el prompt, no la base de datos entera. Esta separación de tareas — SQL para agregar, LLM para razonar — es clave en cualquier sistema de IA logística.</div>
+  </div>
+
+  <div class="panel" id="p2">
+    <div class="section-label">Prompt completo enviado al LLM</div>
+    <div class="prompt-block"><span class="p-sys">### ROL
+Eres un experto en optimización de almacenes. Tu tarea es agrupar
+productos por afinidad de compra para minimizar el recorrido en
+pedidos multilinea.
+
+### DATOS DE ENTRADA
+</span><span class="p-data">Co-ocurrencias últimos 90 días (pedidos_juntos / total_A = %):
+
+Detergente    + Suavizante       → 1847/2103 = 87.8%
+Harina        + Huevos           → 698/901   = 77.5%
+Leche UHT     + Cereales         → 1621/2310 = 70.2%
+Detergente    + Papel higiénico  → 1204/2103 = 57.3%
+Agua 5L       + Papel higiénico  → 987/1876  = 52.6%
+Harina        + Azúcar           → 441/901   = 49.0%
+Cereales      + Zumo naranja     → 512/1405  = 36.4%
+Suavizante    + Papel higiénico  → 654/1920  = 34.1%
+Leche UHT     + Azúcar           → 743/2310  = 32.2%
+Agua 5L       + Detergente       → 498/1876  = 26.6%
+</span>
+<span class="p-hl">### RESTRICCIONES DEL ALMACÉN
+- Máximo 6 productos por zona de afinidad
+- Productos &gt;20 kg no pueden ir en estantería alta (Agua 5L = 25 kg)
+- La zona de limpieza tiene asignado pasillo 3 (no modificar)</span>
+
+<span class="p-sys">### TAREA
+1. Identifica grupos de afinidad con justificación breve.
+2. Asigna un nombre operativo a cada grupo.
+3. Indica qué productos quedan sin grupo y por qué.
+4. Responde ÚNICAMENTE en JSON con este esquema:
+{
+  "grupos": [{
+    "id": "GRP-XX",
+    "nombre": "...",
+    "productos": [...],
+    "afinidad_media": 0.0,
+    "justificacion": "...",
+    "restriccion_aplicada": "..." (opcional)
+  }],
+  "sin_grupo": [...],
+  "razon_sin_grupo": "...",
+  "ahorro_estimado_recorrido": "..."
+}</span></div>
+    <div class="callout warn">Las restricciones son lo que convierte un resultado genérico en uno aplicable. Sin ellas, el LLM podría proponer ubicaciones físicamente imposibles o que rompan la organización existente del almacén.</div>
+  </div>
+
+  <div class="panel" id="p3">
+    <div class="section-label">JSON devuelto por el LLM</div>
+    <div class="code-block">{
+  <span class="kw">"grupos"</span>: [
+    {
+      <span class="kw">"id"</span>: <span class="fn">"GRP-01"</span>,
+      <span class="kw">"nombre"</span>: <span class="hl">"Desayuno y repostería"</span>,
+      <span class="kw">"productos"</span>: ["Leche UHT","Cereales","Azúcar","Harina","Huevos","Zumo naranja"],
+      <span class="kw">"afinidad_media"</span>: 0.61,
+      <span class="kw">"justificacion"</span>: <span class="fn">"Leche+Cereales (70%) y Harina+Huevos (77%) son los
+        núcleos. Azúcar conecta ambos subgrupos (49% con Harina, 32% con Leche)."</span>
+    },
+    {
+      <span class="kw">"id"</span>: <span class="fn">"GRP-02"</span>,
+      <span class="kw">"nombre"</span>: <span class="hl">"Limpieza del hogar"</span>,
+      <span class="kw">"productos"</span>: ["Detergente","Suavizante","Papel higiénico","Bayetas","Limpiahogar"],
+      <span class="kw">"afinidad_media"</span>: 0.59,
+      <span class="kw">"justificacion"</span>: <span class="fn">"Detergente+Suavizante (87.8%) es el par más fuerte
+        del dataset. Papel higiénico co-ocurre con ambos."</span>,
+      <span class="kw">"restriccion_aplicada"</span>: <span class="hl">"Ubicado en pasillo 3 según restricción"</span>
+    },
+    {
+      <span class="kw">"id"</span>: <span class="fn">"GRP-03"</span>,
+      <span class="kw">"nombre"</span>: <span class="hl">"Agua e higiene"</span>,
+      <span class="kw">"productos"</span>: ["Agua 5L","Papel higiénico"],
+      <span class="kw">"afinidad_media"</span>: 0.53,
+      <span class="kw">"justificacion"</span>: <span class="fn">"Agua 5L co-ocurre con Papel higiénico (52.6%).
+        Separado de limpieza por restricción de peso."</span>,
+      <span class="kw">"restriccion_aplicada"</span>: <span class="hl">"Agua 5L &gt;20kg → estantería baja obligatoria"</span>
+    }
+  ],
+  <span class="kw">"sin_grupo"</span>: ["Mermelada","Aceite"],
+  <span class="kw">"razon_sin_grupo"</span>: <span class="fn">"Afinidad &lt;20% con cualquier producto. Candidatos
+    a reubicar en próximo ciclo cuando haya más datos."</span>,
+  <span class="kw">"ahorro_estimado_recorrido"</span>: <span class="fn">"23-31%"</span>
+}</div>
+    <div class="section-label">Por qué el LLM aporta valor aquí</div>
+    <div class="response-row"><div class="icon">✓</div><div class="body">Respeta restricciones físicas del almacén<span>No pone Agua 5L en estantería alta, no mueve la zona de limpieza del pasillo 3</span></div></div>
+    <div class="response-row"><div class="icon">✓</div><div class="body">Justifica cada decisión en lenguaje natural<span>El gestor puede auditar por qué cada producto está en cada grupo, sin interpretar código</span></div></div>
+    <div class="response-row"><div class="icon">✓</div><div class="body">Identifica los casos problemáticos sin inventarse soluciones<span>Mermelada y Aceite quedan fuera — no los fuerza en un grupo donde no encajan</span></div></div>
+    <div class="response-row"><div class="icon">✓</div><div class="body">Da un rango honesto, no un número exacto<span>"23-31%" es más honesto que "27.4%" para un dataset de 90 días</span></div></div>
+    <div class="response-row"><div class="icon">✓</div><div class="body">Devuelve JSON estructurado listo para el SGA<span>El resultado se puede pasar directamente al sistema de gestión de almacén sin traducción</span></div></div>
+  </div>
+
+  <div class="panel" id="p4">
+    <div class="section-label">Grupos de afinidad resultantes</div>
+    <div class="group-card">
+      <div class="group-header">
+        <span class="badge b-amber">GRP-01</span>
+        <span class="group-name">Desayuno y repostería</span>
+        <span class="group-aff">Afinidad media: 61%</span>
+      </div>
+      <div class="badges">
+        <span class="badge b-green">Leche UHT</span><span class="badge b-green">Cereales</span><span class="badge b-green">Azúcar</span><span class="badge b-amber">Harina</span><span class="badge b-amber">Huevos</span><span class="badge b-amber">Zumo naranja</span>
+      </div>
+    </div>
+    <div class="group-card">
+      <div class="group-header">
+        <span class="badge b-blue">GRP-02 · Pasillo 3</span>
+        <span class="group-name">Limpieza del hogar</span>
+        <span class="group-aff">Afinidad media: 59%</span>
+      </div>
+      <div class="badges">
+        <span class="badge b-green">Detergente</span><span class="badge b-green">Suavizante</span><span class="badge b-green">Papel higiénico</span><span class="badge b-amber">Bayetas</span><span class="badge b-amber">Limpiahogar</span>
+      </div>
+    </div>
+    <div class="group-card">
+      <div class="group-header">
+        <span class="badge b-gray">GRP-03</span>
+        <span class="group-name">Agua e higiene</span>
+        <span class="group-aff">Afinidad media: 53%</span>
+      </div>
+      <div class="badges">
+        <span class="badge b-amber">Agua 5L</span><span class="badge b-amber">Papel higiénico</span>
+      </div>
+      <div class="group-note">Separado de limpieza — restricción de peso (&gt;20 kg, estantería baja obligatoria)</div>
+    </div>
+    <div style="margin-bottom:1.25rem;">
+      <div class="section-label">Sin grupo — pendiente revisión manual</div>
+      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        <span class="badge b-gray">Mermelada</span><span class="badge b-gray">Aceite</span>
+        <span style="font-size:12px; color:var(--text2);">Afinidad &lt;20% con cualquier producto. El LLM no los forzó en ningún grupo.</span>
+      </div>
+    </div>
+    <div class="section-label">¿Qué hace el sistema después?</div>
+    <ul class="step-list">
+      <li><div class="step-num">1</div><div class="step-body">El JSON se convierte en órdenes de cambio de ubicación en el SGA<div class="step-sub">Sin intervención manual — el sistema genera las instrucciones de movimiento automáticamente</div></div></li>
+      <li><div class="step-num">2</div><div class="step-body">El responsable revisa y aprueba antes de ejecutar<div class="step-sub">El LLM propone, la persona decide. Nada se mueve sin validación humana</div></div></li>
+      <li><div class="step-num">3</div><div class="step-body">El ciclo se repite cada semana o mes<div class="step-sub">En diciembre "repostería" crece, en verano "bebidas" se separa. Los grupos evolucionan con la demanda</div></div></li>
+    </ul>
+  </div>
+
+  <div class="panel" id="p5">
+    <div class="section-label">Cómo enseñarlo en clase</div>
+    <div class="teach-grid">
+      <div class="teach-card">
+        <h3>Empieza por el problema, no por la solución</h3>
+        <p>Pregunta: "¿Cómo sabéis ahora qué productos ponen juntos los clientes?" Deja que respondan. El silencio incómodo es el gancho.</p>
+      </div>
+      <div class="teach-card">
+        <h3>El paso SQL es el más importante</h3>
+        <p>La IA no hace magia con datos caóticos. Muestra la pestaña 2 primero: alguien tiene que limpiar y agregar los datos antes de que el LLM pueda razonar.</p>
+      </div>
+      <div class="teach-card">
+        <h3>Las restricciones son la clave</h3>
+        <p>Pide a los alumnos que añadan una restricción de su propio almacén al prompt. Eso convierte el ejemplo genérico en algo real para ellos.</p>
+      </div>
+      <div class="teach-card">
+        <h3>El JSON como punto de debate</h3>
+        <p>Muestra la respuesta del LLM y pregunta: "¿Aprobaríais este resultado tal cual?" Busca que discutan qué cambiarían antes de enviarlo al SGA.</p>
+      </div>
+      <div class="teach-card">
+        <h3>La pregunta que más debate genera</h3>
+        <p>"¿Cada cuánto tiempo deberíamos recalcular los grupos?" No tiene respuesta única — depende de estacionalidad, campañas, altas de producto.</p>
+      </div>
+      <div class="teach-card">
+        <h3>Conecta con el slotting dinámico</h3>
+        <p>Si ya vieron el ejemplo anterior, pregunta: "¿Cuál haríais primero, el slotting o la afinidad?" La respuesta correcta es que se alimentan mutuamente.</p>
+      </div>
+    </div>
+    <div class="callout good">El mensaje central para llevar a casa: el LLM no sustituye el criterio del gestor ni el sistema de datos. Hace una sola cosa bien — razonar sobre restricciones contradictorias y explicar por qué — que un SQL no puede hacer.</div>
+  </div>
+
+  <div class="footer">
+    Ejemplo didáctico para cursos de gestión logística e IA · Los datos son ilustrativos · Flujo completo: datos brutos → SQL de co-ocurrencias → prompt con restricciones → respuesta LLM → órdenes de ubicación
+  </div>
+</div>
+
+<script>
+function setTab(n) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', i===n));
+  document.querySelectorAll('.panel').forEach((p,i) => p.classList.toggle('active', i===n));
+  document.querySelectorAll('.flow-step').forEach((s,i) => s.classList.toggle('active', i===n));
+}
+</script>
+</body>
+</html>

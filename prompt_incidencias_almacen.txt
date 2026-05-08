@@ -1,0 +1,51 @@
+Analiza el documento de incidencias de almacén que te adjunto.
+
+Quiero que actúes como un analista de operaciones logísticas y generes un informe ejecutivo claro y estructurado.
+
+### 1. Identificación de patrones
+
+* Identifica las incidencias más frecuentes (agrupando aunque estén redactadas de forma diferente).
+* Indica cuántas veces aparece cada tipo de incidencia.
+* Resume cada categoría en una frase clara.
+
+### 2. Incidencias críticas
+
+* Enumera las incidencias de mayor gravedad (Alta o Crítica).
+* Explica por qué son críticas desde el punto de vista operativo.
+* Detecta si hay patrones repetidos dentro de estas incidencias.
+
+### 3. Análisis por áreas
+
+* Agrupa incidencias por zona (picking, recepción, expediciones, etc.).
+* Indica qué áreas tienen más problemas y de qué tipo.
+
+### 4. Causas raíz (estimadas)
+
+* Deduce posibles causas raíz (ej: falta de formación, errores de sistema, falta de personal, mala organización).
+* Relaciona cada causa con ejemplos del documento.
+
+### 5. Recomendaciones
+
+Propón mejoras concretas y accionables, por ejemplo:
+
+* Procesos
+* Tecnología (WMS, RF, automatización…)
+* Formación
+* Organización de turnos
+
+### 6. Quick wins
+
+* Sugiere 3–5 acciones rápidas que podrían reducir incidencias en el corto plazo.
+
+### 7. Resumen ejecutivo
+
+* Resume todo en 5–6 líneas para dirección.
+
+### Reglas importantes:
+
+* No te limites a copiar texto: interpreta y agrupa.
+* Tolera errores tipográficos o redacción inconsistente.
+* Sé conciso pero útil.
+* Prioriza impacto operativo real.
+
+El objetivo es obtener insights accionables a partir de datos no estructurados.

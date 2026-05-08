@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KPI e indicadores con IA — Ejemplo de Curso</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #ffffff; --bg2: #f5f4f0; --bg3: #eeecea;
+  --text: #1a1a18; --text2: #6b6a64; --text3: #9c9a92;
+  --border: rgba(0,0,0,0.10); --border2: rgba(0,0,0,0.20);
+  --blue-bg: #E6F1FB; --blue: #0C447C; --blue-mid: #185FA5;
+  --green-bg: #EAF3DE; --green: #27500A; --green-mid: #3B6D11;
+  --amber-bg: #FAEEDA; --amber: #633806; --amber-mid: #854F0B;
+  --red-bg: #FCEBEB; --red: #791F1F; --red-mid: #A32D2D;
+  --radius: 8px; --radius-lg: 12px;
+  --font: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "SF Mono", "Cascadia Code", "Fira Code", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1e1e1c; --bg2: #2a2a28; --bg3: #333330;
+    --text: #e8e6df; --text2: #9c9a92; --text3: #6b6a64;
+    --border: rgba(255,255,255,0.08); --border2: rgba(255,255,255,0.18);
+    --blue-bg: #042C53; --blue: #B5D4F4; --blue-mid: #85B7EB;
+    --green-bg: #173404; --green: #C0DD97; --green-mid: #97C459;
+    --amber-bg: #412402; --amber: #FAC775; --amber-mid: #EF9F27;
+    --red-bg: #3D1010; --red: #F7C1C1; --red-mid: #F09595;
+  }
+}
+
+body { font-family: var(--font); background: var(--bg3); color: var(--text); min-height: 100vh; padding: 2rem 1rem; display: flex; justify-content: center; align-items: flex-start; }
+.card { background: var(--bg); border-radius: var(--radius-lg); border: 0.5px solid var(--border2); padding: 1.75rem 2rem; max-width: 900px; width: 100%; }
+
+/* API banner */
+.api-banner { background: var(--amber-bg); border: 0.5px solid var(--amber-mid); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 1.75rem; }
+.api-banner h2 { font-size: 13px; font-weight: 500; color: var(--amber); margin-bottom: 6px; }
+.api-banner p  { font-size: 12px; color: var(--amber); line-height: 1.6; margin-bottom: 10px; }
+.api-banner a  { color: var(--amber-mid); }
+.api-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.api-input { flex: 1; min-width: 220px; font-family: var(--mono); font-size: 12px; padding: 7px 10px; border: 0.5px solid var(--border2); border-radius: var(--radius); background: var(--bg); color: var(--text); }
+.api-input:focus { outline: none; border-color: var(--blue-mid); box-shadow: 0 0 0 2px var(--blue-bg); }
+.api-status { font-size: 12px; color: var(--text3); }
+.api-status.ok { color: var(--green-mid); font-weight: 500; }
+
+/* Header */
+.dash-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 1.5rem; }
+.dash-header h1 { font-size: 17px; font-weight: 500; }
+.dash-meta { font-size: 11px; color: var(--text2); background: var(--bg2); padding: 4px 12px; border-radius: 20px; }
+
+/* KPI grid */
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 1rem; }
+.kpi-card { background: var(--bg); border: 0.5px solid var(--border2); border-radius: var(--radius); padding: 12px 14px; cursor: pointer; transition: border-color .15s, background .15s; position: relative; user-select: none; }
+.kpi-card:hover { background: var(--bg2); }
+.kpi-card.alert { border-color: var(--red-mid); }
+.kpi-card.warn  { border-color: var(--amber-mid); }
+.kpi-card.ok    { border-color: var(--green-mid); }
+.kpi-card.selected { border: 2px solid var(--blue-mid) !important; background: var(--blue-bg) !important; }
+.kpi-trend { position: absolute; top: 10px; right: 10px; font-size: 13px; }
+.kpi-label { font-size: 11px; color: var(--text2); margin-bottom: 4px; line-height: 1.3; padding-right: 18px; }
+.kpi-value { font-size: 21px; font-weight: 500; line-height: 1; }
+.kpi-value.red   { color: var(--red-mid); }
+.kpi-value.amber { color: var(--amber-mid); }
+.kpi-value.green { color: var(--green-mid); }
+.kpi-delta { font-size: 11px; margin-top: 4px; }
+.kpi-delta.bad  { color: var(--red-mid); }
+.kpi-delta.warn { color: var(--amber-mid); }
+.kpi-delta.good { color: var(--green-mid); }
+.sparkline { display: flex; align-items: flex-end; gap: 2px; height: 24px; margin-top: 8px; }
+.spark-bar { flex: 1; border-radius: 2px 2px 0 0; min-height: 3px; }
+.kpi-ctx-panel { background: var(--bg2); border: 0.5px solid var(--border2); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 1rem; display: none; }
+.kpi-ctx-panel.visible { display: block; }
+.kpi-ctx-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+.kpi-ctx-header strong { font-size: 13px; }
+.kpi-ctx-desc { font-size: 12px; color: var(--text2); margin-bottom: 10px; line-height: 1.5; }
+.kpi-ctx-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px; margin-bottom: 10px; }
+.kpi-ctx-item { background: var(--bg); border-radius: 6px; padding: 8px 10px; border: 0.5px solid var(--border); }
+.kpi-ctx-item-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 2px; }
+.kpi-ctx-item-val { font-size: 13px; font-weight: 500; font-family: var(--mono); }
+.kpi-ctx-context { font-size: 12px; color: var(--text2); line-height: 1.6; padding: 8px 10px; background: var(--bg); border-radius: 6px; border: 0.5px solid var(--border); }
+.kpi-ctx-context-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px; font-weight: 500; }
+
+/* Controls */
+.controls-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 1rem 0; }
+.hint-txt { font-size: 12px; color: var(--text2); margin-bottom: 0.75rem; }
+.btn { background: var(--bg); border: 0.5px solid var(--border2); border-radius: var(--radius); padding: 8px 18px; font-size: 13px; cursor: pointer; color: var(--text); font-family: var(--font); transition: background .15s; }
+.btn:hover { background: var(--bg2); }
+.btn.primary { background: var(--text); color: var(--bg); border-color: transparent; }
+.btn.primary:hover { opacity: .85; }
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+.status-txt { font-size: 12px; color: var(--text2); }
+
+/* Analysis panel */
+.analysis-panel { background: var(--bg2); border: 0.5px solid var(--border2); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1.25rem; }
+.analysis-header { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.analysis-title { font-size: 14px; font-weight: 500; }
+.badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 10px; }
+.b-red   { background: var(--red-bg);   color: var(--red-mid); }
+.b-amber { background: var(--amber-bg); color: var(--amber-mid); }
+.b-green { background: var(--green-bg); color: var(--green-mid); }
+.b-blue  { background: var(--blue-bg);  color: var(--blue-mid); }
+.response-area { font-size: 13px; line-height: 1.8; min-height: 60px; white-space: pre-wrap; word-break: break-word; color: var(--text); }
+.response-area.idle    { color: var(--text3); font-style: italic; }
+.response-area.loading { color: var(--text2); font-style: italic; }
+
+/* Context section */
+.divider { height: 0.5px; background: var(--border2); margin: 1.25rem 0; }
+.section-label { font-size: 11px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
+.tbl-wrap { overflow-x: auto; margin-bottom: 0.75rem; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+th { text-align: left; font-weight: 500; font-size: 11px; color: var(--text2); padding: 5px 10px; border-bottom: 0.5px solid var(--border2); white-space: nowrap; }
+td { padding: 5px 10px; border-bottom: 0.5px solid var(--border2); font-family: var(--mono); font-size: 11px; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--bg2); }
+
+/* Callout */
+.callout { border-left: 3px solid var(--border2); padding: 10px 14px; margin-top: 1rem; font-size: 12px; line-height: 1.6; color: var(--text2); }
+.callout.info { border-color: var(--blue-mid); background: var(--blue-bg); color: var(--blue); }
+
+/* Teaching section */
+.teach-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-top: 1.25rem; }
+.teach-card { background: var(--bg2); border-radius: var(--radius); padding: 12px 14px; }
+.teach-card h3 { font-size: 13px; font-weight: 500; margin-bottom: 5px; }
+.teach-card p  { font-size: 12px; color: var(--text2); line-height: 1.6; }
+
+.footer { margin-top: 2rem; padding-top: 1rem; border-top: 0.5px solid var(--border2); font-size: 12px; color: var(--text3); line-height: 1.6; }
+
+details { margin-top: 1.25rem; border: 0.5px solid var(--border2); border-radius: var(--radius); overflow: hidden; }
+details summary { padding: 10px 14px; cursor: pointer; font-size: 13px; font-weight: 500; background: var(--bg2); list-style: none; display: flex; align-items: center; justify-content: space-between; }
+details summary::after { content: '▸'; font-size: 11px; color: var(--text3); }
+details[open] summary::after { content: '▾'; }
+details .details-body { padding: 14px; }
+</style>
+</head>
+<body>
+<div class="card">
+
+  <!-- API BANNER -->
+  <div class="api-banner">
+    <h2>Configuración — API key de Anthropic</h2>
+    <p>Para que el LLM analice los KPIs en tiempo real necesitas una API key. Obtenla en <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> → API Keys → Create Key. Las primeras llamadas tienen crédito gratuito. La key se usa solo localmente en tu navegador.</p>
+    <div class="api-row">
+      <input type="password" class="api-input" id="api-key-input" placeholder="sk-ant-api03-..." oninput="checkKey(this.value)">
+      <span class="api-status" id="api-status">Sin configurar</span>
+    </div>
+  </div>
+
+  <!-- DASHBOARD HEADER -->
+  <div class="dash-header">
+    <h1>KPI e indicadores — Almacén Central</h1>
+    <span class="dash-meta">Semana 18 · 28 abr – 4 may 2026</span>
+  </div>
+
+  <!-- KPI CARDS -->
+  <div class="kpi-grid" id="kpi-grid"></div>
+
+  <!-- KPI CONTEXT PANEL -->
+  <div class="kpi-ctx-panel" id="kpi-ctx-panel">
+    <div class="kpi-ctx-header">
+      <span class="badge" id="ctx-badge"></span>
+      <strong id="ctx-title"></strong>
+    </div>
+    <div class="kpi-ctx-desc" id="ctx-desc"></div>
+    <div class="kpi-ctx-grid" id="ctx-grid"></div>
+    <div class="kpi-ctx-context-label">Contexto que recibe el LLM sobre este KPI</div>
+    <div class="kpi-ctx-context" id="ctx-context"></div>
+  </div>
+
+  <p class="hint-txt">Haz clic en una tarjeta para ver qué datos recibe el LLM. Selecciona uno o varios y pulsa <strong>Analizar con IA</strong>.</p>
+
+  <div class="controls-row">
+    <button class="btn primary" id="btn-analyze" onclick="analyze()">Analizar con IA →</button>
+    <button class="btn" onclick="selectAll()">Seleccionar todos</button>
+    <button class="btn" onclick="clearSel()">Limpiar</button>
+    <span class="status-txt" id="status-txt"></span>
+  </div>
+
+  <!-- ANALYSIS PANEL -->
+  <div class="analysis-panel">
+    <div class="analysis-header">
+      <span class="analysis-title" id="analysis-title">Análisis del LLM</span>
+      <span id="analysis-badges"></span>
+    </div>
+    <div class="response-area idle" id="response-area">Selecciona los KPIs que quieres analizar y pulsa "Analizar con IA".</div>
+  </div>
+
+  <!-- CONTEXT TABLE (hidden until first analysis) -->
+  <div id="context-section" style="display:none">
+    <div class="divider"></div>
+    <div class="section-label">Contexto enviado al LLM</div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>KPI</th><th>Descripción</th><th>Valor actual</th><th>Objetivo</th><th>Sem. anterior</th><th>Historial 4 sem.</th></tr></thead>
+        <tbody id="context-body"></tbody>
+      </table>
+    </div>
+    <div class="callout info">El LLM no accede al ERP directamente. Recibe este resumen estructurado — igual que en los ejemplos de afinidad y rutas. La clave está en qué contexto le das, no en conectarlo a todo.</div>
+  </div>
+
+  <!-- TEACHING NOTES -->
+  <details>
+    <summary>Cómo enseñarlo en clase</summary>
+    <div class="details-body">
+      <div class="teach-grid">
+        <div class="teach-card">
+          <h3>Empieza con un solo KPI en rojo</h3>
+          <p>Selecciona solo el OTIF y pide el análisis. La respuesta será limitada. Luego añade los demás y repite — el LLM encontrará las conexiones causales que no veía solo.</p>
+        </div>
+        <div class="teach-card">
+          <h3>La pregunta clave</h3>
+          <p>"¿Cuánto tiempo os llevaría conectar estos cuatro KPIs mirando el cuadro de mando?" El LLM lo hace en segundos y lo explica en lenguaje de gestor.</p>
+        </div>
+        <div class="teach-card">
+          <h3>Muestra el contexto enviado</h3>
+          <p>Despliega la tabla de contexto después del análisis. Los alumnos ven que el LLM no hace magia — razona sobre datos que alguien ha preparado. Eso es lo importante.</p>
+        </div>
+        <div class="teach-card">
+          <h3>El límite del LLM</h3>
+          <p>Pregunta: "¿Qué no puede hacer el LLM aquí?" No puede abrir el ERP, no sabe qué pasó exactamente en el muelle 3, no ejecuta la acción correctiva. Propone — el gestor decide.</p>
+        </div>
+        <div class="teach-card">
+          <h3>Reactivo vs. predictivo</h3>
+          <p>El cuadro de mando clásico te dice que algo ya fue mal. Este te dice por qué y qué hacer ahora. El siguiente paso (predictivo) sería anticiparlo antes de que ocurra.</p>
+        </div>
+        <div class="teach-card">
+          <h3>Conecta con los ejemplos anteriores</h3>
+          <p>La productividad de picking bajó. ¿Podría estar relacionado con el slotting? ¿Con la afinidad? ¿Con la ruta de picking? Los KPIs son el resultado — los ejemplos anteriores son las causas.</p>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <div class="footer">
+    Ejemplo didáctico para cursos de gestión logística e IA · Conecta con la API de Anthropic (claude-sonnet-4-20250514) · La API key se usa solo localmente en tu navegador
+  </div>
+</div>
+
+<script>
+const KPIS = [
+  {
+    id: 'otif',
+    label: 'OTIF',
+    value: '84.2%', unit: '%', raw: 84.2, target: 95, prev: 91.3,
+    status: 'red', trend: '↓', delta: '−7.1pp vs sem. ant.', deltaClass: 'bad',
+    history: [93, 92, 91, 84], barColor: '#E24B4A',
+    desc: 'On Time In Full — pedidos entregados completos y a tiempo',
+    context: 'Bajada brusca de 7 puntos en una sola semana. Afecta principalmente a rutas B y C. Incidencia de transporte pendiente de resolución desde el miércoles.'
+  },
+  {
+    id: 'fill',
+    label: 'Fill Rate',
+    value: '97.1%', unit: '%', raw: 97.1, target: 98, prev: 98.2,
+    status: 'warn', trend: '↓', delta: '−1.1pp vs sem. ant.', deltaClass: 'warn',
+    history: [98, 98, 98, 97], barColor: '#EF9F27',
+    desc: '% de líneas de pedido servidas completamente sin rotura de stock',
+    context: 'Rotura de stock en 3 referencias de alta rotación: SKU-441 (leche UHT), SKU-882 (detergente), SKU-203 (agua 5L). Reposición prevista en 48h.'
+  },
+  {
+    id: 'pick',
+    label: 'Productividad picking',
+    value: '112 lín/h', unit: 'lín/h', raw: 112, target: 130, prev: 128,
+    status: 'red', trend: '↓', delta: '−16 lín/h vs sem. ant.', deltaClass: 'bad',
+    history: [125, 128, 127, 112], barColor: '#E24B4A',
+    desc: 'Líneas de pedido recogidas por operario y hora',
+    context: 'Caída coincide con incorporación de 3 operarios nuevos el lunes (en formación). Incidencia en sistema de radiofrecuencia desde el martes tarde.'
+  },
+  {
+    id: 'dock',
+    label: 'Dock-to-stock',
+    value: '3.8h', unit: 'h', raw: 3.8, target: 2, prev: 2.1,
+    status: 'red', trend: '↑', delta: '+1.7h vs sem. ant.', deltaClass: 'bad',
+    history: [2.0, 2.1, 2.2, 3.8], barColor: '#E24B4A',
+    desc: 'Tiempo desde descarga en muelle hasta ubicación en estantería',
+    context: 'Pico de recepciones martes y miércoles (×2.3 el volumen habitual). Muelle 3 fuera de servicio por obras desde el lunes. Solo 2 muelles operativos.'
+  },
+  {
+    id: 'inv',
+    label: 'Exactitud inventario',
+    value: '99.3%', unit: '%', raw: 99.3, target: 99.5, prev: 99.4,
+    status: 'warn', trend: '↓', delta: '−0.1pp vs sem. ant.', deltaClass: 'warn',
+    history: [99.5, 99.4, 99.4, 99.3], barColor: '#EF9F27',
+    desc: '% de ubicaciones donde stock real coincide con stock sistema',
+    context: 'Ligera desviación detectada en pasillo D. Inventario cíclico programado para el viernes. Sin impacto operativo relevante por ahora.'
+  },
+  {
+    id: 'cost',
+    label: 'Coste por línea',
+    value: '€0.87', unit: '€', raw: 0.87, target: 0.72, prev: 0.74,
+    status: 'red', trend: '↑', delta: '+€0.13 vs sem. ant.', deltaClass: 'bad',
+    history: [0.72, 0.74, 0.75, 0.87], barColor: '#E24B4A',
+    desc: 'Coste operativo total dividido entre líneas de pedido preparadas',
+    context: 'Incremento ligado a la caída de productividad picking y a las horas extra del martes para absorber el pico de recepciones con solo 2 muelles operativos.'
+  }
+];
+
+let selected = new Set();
+let apiKey = '';
+
+function checkKey(val) {
+  apiKey = val.trim();
+  const st = document.getElementById('api-status');
+  if (apiKey.startsWith('sk-ant-')) {
+    st.textContent = '✓ API key lista';
+    st.className = 'api-status ok';
+  } else if (apiKey.length > 0) {
+    st.textContent = 'Formato incorrecto (debe empezar por sk-ant-)';
+    st.className = 'api-status';
+  } else {
+    st.textContent = 'Sin configurar';
+    st.className = 'api-status';
+  }
+}
+
+let lastClicked = null;
+
+function showContext(k) {
+  lastClicked = k.id;
+  const panel = document.getElementById('kpi-ctx-panel');
+  panel.className = 'kpi-ctx-panel visible';
+
+  const badgeClass = k.status === 'red' ? 'b-red' : k.status === 'warn' ? 'b-amber' : 'b-green';
+  document.getElementById('ctx-badge').className = 'badge ' + badgeClass;
+  document.getElementById('ctx-badge').textContent = k.label;
+  document.getElementById('ctx-title').textContent = k.desc;
+  document.getElementById('ctx-desc').textContent = '';
+  document.getElementById('ctx-context').textContent = k.context;
+
+  document.getElementById('ctx-grid').innerHTML = `
+    <div class="kpi-ctx-item">
+      <div class="kpi-ctx-item-label">Valor actual</div>
+      <div class="kpi-ctx-item-val" style="color:${k.status==='red'?'var(--red-mid)':k.status==='warn'?'var(--amber-mid)':'var(--green-mid)'}">${k.value}</div>
+    </div>
+    <div class="kpi-ctx-item">
+      <div class="kpi-ctx-item-label">Objetivo</div>
+      <div class="kpi-ctx-item-val">${k.target}${k.unit}</div>
+    </div>
+    <div class="kpi-ctx-item">
+      <div class="kpi-ctx-item-label">Semana anterior</div>
+      <div class="kpi-ctx-item-val">${k.prev}${k.unit}</div>
+    </div>
+    <div class="kpi-ctx-item">
+      <div class="kpi-ctx-item-label">Historial 4 semanas</div>
+      <div class="kpi-ctx-item-val" style="font-size:11px">${k.history.join(' → ')}${k.unit}</div>
+    </div>`;
+}
+
+function renderKPIs() {
+  const grid = document.getElementById('kpi-grid');
+  grid.innerHTML = '';
+  KPIS.forEach(k => {
+    const isSel = selected.has(k.id);
+    const card = document.createElement('div');
+    card.className = ['kpi-card', k.status, isSel ? 'selected' : ''].filter(Boolean).join(' ');
+    card.onclick = () => {
+      selected.has(k.id) ? selected.delete(k.id) : selected.add(k.id);
+      showContext(k);
+      renderKPIs();
+    };
+
+    const maxV = Math.max(...k.history), minV = Math.min(...k.history);
+    const bars = k.history.map((v, i) => {
+      const pct = maxV === minV ? 50 : Math.round(10 + (v - minV) / (maxV - minV) * 90);
+      const last = i === k.history.length - 1;
+      return `<div class="spark-bar" style="height:${pct}%;background:${k.barColor};opacity:${last ? 1 : 0.35}"></div>`;
+    }).join('');
+
+    card.innerHTML = `
+      <div class="kpi-trend">${k.trend}</div>
+      <div class="kpi-label">${k.label}</div>
+      <div class="kpi-value ${k.status === 'red' ? 'red' : k.status === 'warn' ? 'amber' : 'green'}">${k.value}</div>
+      <div class="kpi-delta ${k.deltaClass}">${k.delta}</div>
+      <div class="sparkline">${bars}</div>`;
+    grid.appendChild(card);
+  });
+}
+
+function selectAll() { KPIS.forEach(k => selected.add(k.id)); renderKPIs(); }
+function clearSel()  { selected.clear(); renderKPIs(); }
+
+async function analyze() {
+  if (selected.size === 0) {
+    alert('Selecciona al menos un KPI antes de analizar.');
+    return;
+  }
+  if (!apiKey || !apiKey.startsWith('sk-ant-')) {
+    alert('Introduce primero tu API key de Anthropic.\nPuedes obtenerla en console.anthropic.com');
+    return;
+  }
+
+  const btn  = document.getElementById('btn-analyze');
+  const area = document.getElementById('response-area');
+  const stxt = document.getElementById('status-txt');
+  btn.disabled = true;
+  stxt.textContent = 'Consultando API...';
+  area.className = 'response-area loading';
+  area.textContent = 'El LLM está analizando los KPIs seleccionados...';
+
+  const selKPIs = KPIS.filter(k => selected.has(k.id));
+
+  // Update header
+  document.getElementById('analysis-title').textContent = 'Análisis: ' + selKPIs.map(k => k.label).join(', ');
+  document.getElementById('analysis-badges').innerHTML = selKPIs.map(k =>
+    `<span class="badge ${k.status === 'red' ? 'b-red' : k.status === 'warn' ? 'b-amber' : 'b-green'}" style="margin-right:4px">${k.label}</span>`
+  ).join('');
+
+  // Build context table
+  const tbody = document.getElementById('context-body');
+  tbody.innerHTML = '';
+  selKPIs.forEach(k => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${k.label}</td><td style="font-family:var(--font)">${k.desc}</td><td>${k.value}</td><td>${k.target}${k.unit}</td><td>${k.prev}${k.unit}</td><td>${k.history.join(' → ')}${k.unit}</td>`;
+    tbody.appendChild(tr);
+  });
+  document.getElementById('context-section').style.display = 'block';
+
+  // Build prompt
+  const kpiBlock = selKPIs.map(k =>
+    `KPI: ${k.label}\nDescripción: ${k.desc}\nValor actual: ${k.value} (objetivo: ${k.target}${k.unit})\nSemana anterior: ${k.prev}${k.unit}\nHistorial 4 semanas: ${k.history.join(' → ')}${k.unit}\nContexto adicional: ${k.context}`
+  ).join('\n\n---\n\n');
+
+  const userMsg = `Estos son los KPIs logísticos del almacén esta semana:\n\n${kpiBlock}\n\nPor favor:\n1. Explica en lenguaje directo qué está pasando y cuáles son las causas raíz probables\n2. Identifica relaciones causales entre los KPIs si las hay\n3. Recomienda 2-3 acciones concretas priorizadas por impacto inmediato\n4. Indica qué información adicional necesitarías para confirmar el diagnóstico\n\nHabla directamente con el responsable del almacén. Sin tecnicismos. Máximo 350 palabras.`;
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: 'Eres un analista experto en operaciones logísticas y almacenes. Analizas KPIs y explicas al responsable del almacén qué está pasando y qué hacer. Eres directo, práctico y concreto. Conectas los KPIs entre sí cuando hay relación causal. No usas jerga innecesaria.',
+        messages: [{ role: 'user', content: userMsg }]
+      })
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.error?.message || `Error HTTP ${resp.status}`);
+    }
+
+    const data = await resp.json();
+    const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+    area.className = 'response-area';
+    area.textContent = text || '(Respuesta vacía)';
+    stxt.textContent = '✓ Análisis completado';
+  } catch (e) {
+    area.className = 'response-area';
+    area.textContent = 'Error: ' + e.message + '\n\nVerifica que la API key sea correcta y tenga crédito disponible en console.anthropic.com';
+    stxt.textContent = 'Error';
+  }
+  btn.disabled = false;
+}
+
+renderKPIs();
+</script>
+</body>
+</html>
