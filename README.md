@@ -14,15 +14,15 @@ DIA 1:
  
 - IA en almacenaje y gestión de ubicaciones
  [Ejemplo slotting dinamico](slotting_dinamico_IA.html)
- [Almacenaje por afinidad] (afinidad_productos_IA.html)
+ [Almacenaje por afinidad](afinidad_productos_IA.html)
  
 - IA en picking
- [Ejemplo de rutas picking con LLM] (rutas_picking_LLM.html)
+ [Ejemplo de rutas picking con LLM](rutas_picking_LLM.html)
  
 - KPI e indicadores
- [Ejemplo de KPI con IA] (kpi_analisis_IA.html)
+ [Ejemplo de KPI con IA](kpi_analisis_IA.html)
  
 - Ejercicio grupal aplicado
- [Plantilla ejercicio] (plantillaEjercicio1.pptx)
+ [Plantilla ejercicio](plantillaEjercicio1.pptx)
 
 
