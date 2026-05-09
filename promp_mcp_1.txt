@@ -1,0 +1,17 @@
+Tienes acceso a la base de datos del SGA de Whales a través del MCP.
+
+Las tablas relevantes son:
+  - expPedidoCabeceras (idExpPedidoCabecera, fechaTransporte, estado)
+  - expPedidoLineas (idPedido, idReferencia, cantidadPedida)
+  - referencias (idReferencia, referencia, descripcion)
+
+JOIN: expPedidoLineas.idPedido = expPedidoCabeceras.idExpPedidoCabecera
+      expPedidoLineas.idReferencia = referencias.idReferencia
+
+FILTRO OBLIGATORIO: WHERE expPedidoCabeceras.estado IN (4, 6)
+
+Consulta los pedidos del año en curso y dime cuáles son los 5 artículos
+más pedidos, con su descripción y el total de unidades pedidas.
+Muestra el resultado en una tabla ordenada de mayor a menor.
+
+Responde en español.

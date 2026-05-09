@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ejercicio 1 · Taller de Prompt Engineering Logístico</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F5F3EE;
+    --surface: #FFFFFF;
+    --surface2: #EDEBE5;
+    --border: #D8D4C8;
+    --text: #1A1916;
+    --text-muted: #6B6760;
+    --accent: #2B4EFF;
+    --accent-light: #EEF1FF;
+    --bad: #CC2A2A;
+    --bad-bg: #FFF0F0;
+    --good: #1A6B4A;
+    --good-bg: #E6F5EE;
+    --avz: #A0430D;
+    --avz-bg: #FFF0E8;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* HEADER */
+  .header { background: var(--text); color: white; padding: 48px 40px 40px; }
+  .header-label { font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: rgba(255,255,255,0.4); margin-bottom: 14px; }
+  .header h1 { font-family: 'Syne', sans-serif; font-size: clamp(26px, 5vw, 44px); font-weight: 800; line-height: 1.1; }
+  .header h1 span { color: #7A94FF; }
+  .header-sub { font-size: 14px; color: rgba(255,255,255,0.5); font-weight: 300; margin-top: 10px; }
+  .tools-pill { display: inline-flex; align-items: center; gap: 6px; margin-top: 18px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14); border-radius: 100px; padding: 6px 14px; font-size: 12px; color: rgba(255,255,255,0.55); }
+  .tools-pill strong { color: white; font-weight: 500; }
+
+  /* MAIN */
+  .main { max-width: 960px; margin: 0 auto; padding: 40px 24px 80px; }
+
+  /* EXERCISE OVERVIEW */
+  .exercise-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 40px; }
+  .exercise-card-header { background: var(--accent); color: white; padding: 16px 24px; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 10px; }
+  .exercise-card-header .badge { background: rgba(255,255,255,0.2); border-radius: 6px; padding: 3px 10px; font-size: 11px; font-weight: 600; }
+  .rounds { display: grid; grid-template-columns: 1fr 1fr 1fr; }
+  @media (max-width: 600px) { .rounds { grid-template-columns: 1fr; } }
+  .round { padding: 20px 24px; border-right: 1px solid var(--border); }
+  .round:last-child { border-right: none; }
+  .round-num { font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  .round h3 { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; margin-bottom: 10px; }
+  .round ul { list-style: none; }
+  .round ul li { font-size: 12.5px; color: var(--text-muted); line-height: 1.55; margin-bottom: 5px; padding-left: 14px; position: relative; }
+  .round ul li::before { content: '→'; position: absolute; left: 0; color: var(--accent); font-size: 11px; }
+
+  /* SECTION DIVIDER */
+  .section-divider { display: flex; align-items: center; gap: 14px; margin: 36px 0 18px; }
+  .section-divider-label { font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; white-space: nowrap; color: var(--text-muted); }
+  .section-divider-line { flex: 1; height: 1px; background: var(--border); }
+
+  /* PROMPT PAIR CARD */
+  .pair-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 14px; overflow: hidden; }
+  .pair-head { display: flex; align-items: center; gap: 12px; padding: 14px 18px; cursor: pointer; user-select: none; }
+  .pair-head:hover { background: var(--surface2); }
+  .p-num { font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 700; color: var(--text-muted); width: 22px; flex-shrink: 0; }
+  .p-title { font-size: 14px; font-weight: 500; flex: 1; }
+  .chevron { font-size: 10px; color: var(--text-muted); transition: transform 0.2s; }
+  .chevron.open { transform: rotate(90deg); }
+  .pair-body { display: none; border-top: 1px solid var(--border); }
+  .pair-body.open { display: block; }
+
+  /* PROMPTS SIDE BY SIDE */
+  .prompts-grid { display: grid; grid-template-columns: 1fr 1fr; }
+  @media (max-width: 640px) { .prompts-grid { grid-template-columns: 1fr; } }
+  .prompt-col { padding: 16px 18px; }
+  .prompt-col:first-child { border-right: 1px solid var(--border); }
+  .col-label { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; margin-bottom: 10px; }
+  .col-label .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .dot-bad { background: var(--bad); }
+  .dot-good { background: var(--good); }
+  .col-label.bad-lbl { color: var(--bad); }
+  .col-label.good-lbl { color: var(--good); }
+
+  .prompt-box-wrap { border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--border); }
+  .prompt-box-wrap.bad { border-color: #F5C5C5; }
+  .prompt-box-wrap.good { border-color: #B8E0CE; }
+  .copy-bar { display: flex; justify-content: flex-end; padding: 6px 8px; border-bottom: 1px solid var(--border); background: var(--surface); }
+  .prompt-box-wrap.bad .copy-bar { border-color: #F5C5C5; background: #FFF7F7; }
+  .prompt-box-wrap.good .copy-bar { border-color: #B8E0CE; background: #F2FAF6; }
+  .prompt-box { padding: 12px 14px; font-size: 13px; line-height: 1.7; white-space: pre-wrap; word-break: break-word; }
+  .prompt-box.bad { background: var(--bad-bg); }
+  .prompt-box.good { background: var(--good-bg); }
+  .copy-btn { font-size: 10px; font-weight: 500; padding: 3px 9px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); color: var(--text-muted); cursor: pointer; transition: all 0.15s; font-family: 'DM Sans', sans-serif; }
+  .copy-btn:hover { background: var(--accent); color: white; border-color: var(--accent); }
+  .copy-btn.copied { background: var(--good); color: white; border-color: var(--good); }
+
+  /* QUÉ MEJORÓ */
+  .que-mejoro { padding: 12px 18px 16px; border-top: 1px solid var(--border); background: var(--surface2); }
+  .que-mejoro-label { font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tag { font-size: 11px; padding: 3px 10px; border-radius: 100px; background: var(--accent-light); color: var(--accent); font-weight: 500; }
+
+  /* AVANZADO */
+  .avz-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 12px; overflow: hidden; }
+  .avz-head { display: flex; align-items: center; gap: 12px; padding: 14px 18px; cursor: pointer; }
+  .avz-head:hover { background: var(--surface2); }
+  .avz-tag { font-size: 10px; font-weight: 600; padding: 3px 10px; border-radius: 100px; background: var(--avz-bg); color: var(--avz); }
+  .avz-body { display: none; padding: 0 18px 18px; border-top: 1px solid var(--border); }
+  .avz-body.open { display: block; }
+  .avz-meta { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin: 12px 0 6px; }
+  .avz-desc { font-size: 13px; color: var(--text-muted); line-height: 1.65; }
+
+  /* 6 TÉCNICAS */
+  .tecnicas-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 22px; margin-top: 36px; }
+  .tecnicas-box h3 { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; color: var(--accent); margin-bottom: 14px; }
+  .tecnicas-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  @media (max-width: 480px) { .tecnicas-grid { grid-template-columns: 1fr; } }
+  .tecnica { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; background: var(--surface2); border-radius: var(--radius-sm); }
+  .tecnica-num { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 18px; color: var(--border); line-height: 1; flex-shrink: 0; }
+  .tecnica-content strong { display: block; font-weight: 600; font-size: 12px; margin-bottom: 2px; }
+  .tecnica-content span { font-size: 12px; color: var(--text-muted); }
+
+  footer { text-align: center; font-size: 12px; color: var(--text-muted); padding: 24px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-label">Prompt Engineering · Ejercicio 1</div>
+  <h1>Taller de prompts<br><span>logísticos</span></h1>
+  <p class="header-sub">Compara, aprende y escribe tus propios prompts</p>
+  <div class="tools-pill">🛠 Herramientas: <strong>Gemini</strong> o <strong>Claude</strong> (navegador)</div>
+</div>
+
+<div class="main">
+
+  <!-- STRUCTURE -->
+  <div class="exercise-card">
+    <div class="exercise-card-header">
+      📋 Estructura del ejercicio
+      <span class="badge">3 rondas · ~30 min</span>
+    </div>
+    <div class="rounds">
+      <div class="round">
+        <div class="round-num">Ronda 1 · 10 min</div>
+        <h3>Base vs Mejorado</h3>
+        <ul>
+          <li>Recibes 1–2 tarjetas de prompts</li>
+          <li>Prueba el prompt BASE primero, anota la respuesta</li>
+          <li>Luego prueba el MEJORADO y compara</li>
+          <li>¿Qué cambio produjo la mayor diferencia?</li>
+        </ul>
+      </div>
+      <div class="round">
+        <div class="round-num">Ronda 2 · 10 min</div>
+        <h3>Tu caso real</h3>
+        <ul>
+          <li>Elige un proceso de tu empresa</li>
+          <li>Escribe tu propio prompt aplicando las 6 técnicas</li>
+          <li>Ideas: reclamación a proveedor, análisis de KPIs, clasificar incidencias…</li>
+        </ul>
+      </div>
+      <div class="round">
+        <div class="round-num">Ronda 3 · 10 min</div>
+        <h3>Puesta en común</h3>
+        <ul>
+          <li>Cada pareja comparte su mejor prompt y la respuesta obtenida</li>
+          <li>El grupo vota el más útil</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- RONDA 1 PAIRS -->
+  <div class="section-divider">
+    <span class="section-divider-label">Ronda 1 — Tarjetas de prompts</span>
+    <div class="section-divider-line"></div>
+  </div>
+
+  <!-- P1 -->
+  <div class="pair-card">
+    <div class="pair-head" onclick="toggle(this)">
+      <span class="p-num">1</span>
+      <span class="p-title">Recepción de mercancía</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="pair-body">
+      <div class="prompts-grid">
+        <div class="prompt-col">
+          <div class="col-label bad-lbl"><span class="dot dot-bad"></span>Prompt BASE</div>
+          <div class="prompt-box-wrap bad">
+            <div class="copy-bar"><button class="copy-btn" onclick="copyPrompt('b1',this)">Copiar</button></div>
+            <div class="prompt-box bad" id="b1">Hazme un checklist para recibir un camión de proveedor en el almacén.</div>
+          </div>
+        </div>
+        <div class="prompt-col">
+          <div class="col-label good-lbl"><span class="dot dot-good"></span>Prompt MEJORADO</div>
+          <div class="prompt-box-wrap good">
+            <div class="copy-bar"><button class="copy-btn" onclick="copyPrompt('g1',this)">Copiar</button></div>
+            <div class="prompt-box good" id="g1">Actúa como jefe de almacén de una empresa de distribución de material de embalaje.
+
+Necesito un checklist de los 8 pasos obligatorios para la recepción de un camión de proveedor, incluyendo:
+- Control de temperatura si el producto lo requiere
+- Qué hacer ante discrepancias con el albarán (>2% en cantidad)
+- Cómo registrar incidencias en el SGA
+
+Formato: lista numerada. Cada paso en máximo 2 líneas. Sin introducción.</div>
+          </div>
+        </div>
+      </div>
+      <div class="que-mejoro">
+        <div class="que-mejoro-label">¿Qué mejoró?</div>
+        <div class="tags">
+          <span class="tag">Rol + contexto específico</span>
+          <span class="tag">Formato explícito</span>
+          <span class="tag">Número de pasos fijado</span>
+          <span class="tag">Casos edge definidos</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- P2 -->
+  <div class="pair-card">
+    <div class="pair-head" onclick="toggle(this)">
+      <span class="p-num">2</span>
+      <span class="p-title">Análisis de KPIs de picking</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="pair-body">
+      <div class="prompts-grid">
+        <div class="prompt-col">
+          <div class="col-label bad-lbl"><span class="dot dot-bad"></span>Prompt BASE</div>
+          <div class="prompt-box-wrap bad">
+            <div class="copy-bar"><button class="copy-btn" onclick="copyPrompt('b2',this)">Copiar</button></div>
+            <div class="prompt-box bad" id="b2">Analiza estos datos de picking del último mes: hemos procesado unas 12.000 líneas con alrededor de 180 errores, con 8 operarios. Dime si estamos bien.</div>
+          </div>
+        </div>
+        <div class="prompt-col">
+          <div class="col-label good-lbl"><span class="dot dot-good"></span>Prompt MEJORADO</div>
+          <div class="prompt-box-wrap good">
+            <div class="copy-bar"><button class="copy-btn" onclick="copyPrompt('g2',this)">Copiar</button></div>
+            <div class="prompt-box good" id="g2">Eres un analista de operaciones logísticas. Voy a darte datos de picking del último mes.
+
+Datos:
+---
+Líneas totales procesadas: 12.450
+Líneas con error: 187
+Tiempo medio por línea: 48 segundos
+Operarios: 8 (turno mañana)
+Referencias procesadas: 834 distintas
+---
+
+Analiza estos datos y:
+1. Calcula la tasa de error y dime si es aceptable (benchmark sector: &lt;1,5%)
+2. Identifica las 3 hipótesis más probables sobre las causas de los errores
+3. Propón 2 acciones correctivas priorizadas por facilidad de implementación
+
+Responde en castellano. Sé directo, sin rodeos.</div>
+          </div>
+        </div>
+      </div>
+      <div class="que-mejoro">
+        <div class="que-mejoro-label">¿Qué mejoró?</div>
+        <div class="tags">
+          <span class="tag">Datos exactos y delimitados con ---</span>
+          <span class="tag">Instrucciones numeradas</span>
+          <span class="tag">Benchmark de referencia dado</span>
+          <span class="tag">Idioma y tono especificados</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- P3 -->
+  <div class="pair-card">
+    <div class="pair-head" onclick="toggle(this)">
+      <span class="p-num">3</span>
+      <span class="p-title">Reclamación a proveedor</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="pair-body">
+      <div class="prompts-grid">
+        <div class="prompt-col">
+          <div class="col-label bad-lbl"><span class="dot dot-bad"></span>Prompt BASE</div>
+          <div class="prompt-box-wrap bad">
+            <div class="copy-bar"><button class="copy-btn" onclick="copyPrompt('b3',this)">Copiar</button></div>
+            <div class="prompt-box bad" id="b3">Escribe un correo a nuestro proveedor de cajas porque el último pedido llegó con muchas unidades defectuosas y queremos que nos devuelvan el dinero.</div>
+          </div>
+        </div>
+        <div class="prompt-col">
+          <div class="col-label good-lbl"><span class="dot dot-good"></span>Prompt MEJORADO</div>
+          <div class="prompt-box-wrap good">
+            <div class="copy-bar"><button class="copy-btn" onclick="copyPrompt('g3',this)">Copiar</button></div>
+            <div class="prompt-box good" id="g3">Redacta un correo profesional pero firme a un proveedor de cajas de cartón.
+
+Situación: el último pedido (albarán nº ALB-20250312, 500 cajas referencia CB-40x30) llegó con un 12% de unidades defectuosas (paredes aplastadas, inutilizables). Somos clientes desde 2019 y es la tercera incidencia en 6 meses.
+
+El correo debe:
+- Describir la incidencia con datos concretos
+- Solicitar una nota de abono por las 60 unidades defectuosas (precio unitario: 0,85€)
+- Pedir un plan de acción para evitar futuras incidencias
+- Dar un plazo de respuesta de 5 días hábiles
+- Tono: profesional y firme, no agresivo
+
+Asunto: incluirlo en la primera línea con el formato ASUNTO: [texto]</div>
+          </div>
+        </div>
+      </div>
+      <div class="que-mejoro">
+        <div class="que-mejoro-label">¿Qué mejoró?</div>
+        <div class="tags">
+          <span class="tag">Contexto con datos concretos</span>
+          <span class="tag">Estructura del output definida</span>
+          <span class="tag">Tono especificado</span>
+          <span class="tag">Formato del asunto pedido</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- P4 -->
+  <div class="pair-card">
+    <div class="pair-head" onclick="toggle(this)">
+      <span class="p-num">4</span>
+      <span class="p-title">Clasificación de incidencias</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="pair-body">
+      <div class="prompts-grid">
+        <div class="prompt-col">
+          <div class="col-label bad-lbl"><span class="dot dot-bad"></span>Prompt BASE</div>
+          <div class="prompt-box-wrap bad">
+            <div class="copy-bar"><button class="copy-btn" onclick="copyPrompt('b4',this)">Copiar</button></div>
+            <div class="prompt-box bad" id="b4">Clasifica estas incidencias de almacén:
+1. El operario cogió 10 unidades en lugar de 1
+2. Temperatura del camión en recepción: 8°C (límite: 4°C)
+3. La etiqueta de la ubicación estaba ilegible
+4. El proveedor entregó 480 ud en lugar de 500
+5. El SGA muestra stock negativo en REF-007</div>
+          </div>
+        </div>
+        <div class="prompt-col">
+          <div class="col-label good-lbl"><span class="dot dot-good"></span>Prompt MEJORADO</div>
+          <div class="prompt-box-wrap good">
+            <div class="copy-bar"><button class="copy-btn" onclick="copyPrompt('g4',this)">Copiar</button></div>
+            <div class="prompt-box good" id="g4">Clasifica cada incidencia en una de estas categorías:
+RECEPCIÓN | ALMACENAMIENTO | PICKING | EXPEDICIÓN | SISTEMA | OTRO
+
+Reglas:
+- Si la incidencia ocurre antes de que el producto entre al stock: RECEPCIÓN
+- Si es un error del SGA o del sistema informático: SISTEMA
+- Si no encaja claramente en ninguna: OTRO + breve explicación
+
+Ejemplos de clasificación:
+- "Palé llegó con 3 referencias mezcladas" → RECEPCIÓN
+- "El SGA no dejaba cerrar la orden de salida" → SISTEMA
+- "Se envió al cliente la referencia equivocada" → EXPEDICIÓN
+
+Ahora clasifica estas incidencias (una por línea, responde con: INCIDENCIA → CATEGORÍA):
+---
+1. El operario cogió 10 unidades en lugar de 1 (error de picking)
+2. Temperatura del camión en recepción: 8°C (límite: 4°C)
+3. La etiqueta de la ubicación P2-14-3 estaba ilegible
+4. El proveedor entregó 480 ud en lugar de 500 según albarán
+5. El informe de inventario del SGA muestra stock negativo en REF-007
+---</div>
+          </div>
+        </div>
+      </div>
+      <div class="que-mejoro">
+        <div class="que-mejoro-label">¿Qué mejoró?</div>
+        <div class="tags">
+          <span class="tag">Categorías con reglas claras</span>
+          <span class="tag">Ejemplos resueltos (few-shot)</span>
+          <span class="tag">Datos delimitados con ---</span>
+          <span class="tag">Formato de respuesta especificado</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- P5 -->
+  <div class="pair-card">
+    <div class="pair-head" onclick="toggle(this)">
+      <span class="p-num">5</span>
+      <span class="p-title">Generación de procedimiento</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="pair-body">
+      <div class="prompts-grid">
+        <div class="prompt-col">
+          <div class="col-label bad-lbl"><span class="dot dot-bad"></span>Prompt BASE</div>
+          <div class="prompt-box-wrap bad">
+            <div class="copy-bar"><button class="copy-btn" onclick="copyPrompt('b5',this)">Copiar</button></div>
+            <div class="prompt-box bad" id="b5">Crea un procedimiento para la reposición de ubicaciones en un almacén de estanterías.</div>
+          </div>
+        </div>
+        <div class="prompt-col">
+          <div class="col-label good-lbl"><span class="dot dot-good"></span>Prompt MEJORADO</div>
+          <div class="prompt-box-wrap good">
+            <div class="copy-bar"><button class="copy-btn" onclick="copyPrompt('g5',this)">Copiar</button></div>
+            <div class="prompt-box good" id="g5">Eres un experto en calidad y procedimientos logísticos (ISO 9001).
+
+Crea un procedimiento operativo estándar (POS) para la tarea de reposición de ubicaciones en un almacén de estanterías convencionales.
+
+Requisitos del documento:
+- Título, código (formato: POS-ALM-XXX) y versión
+- Objetivo del procedimiento (1 frase)
+- Alcance: a quién aplica
+- Definiciones: máximo 3 términos clave
+- Pasos del proceso: numerados, en orden, con responsable de cada paso
+- Puntos de control de calidad (marcados con ⚠)
+- Registro: qué hay que anotar en el SGA y cuándo
+
+Nivel de detalle: suficiente para que un operario nuevo lo siga sin supervisión.
+Longitud total: máximo 400 palabras.</div>
+          </div>
+        </div>
+      </div>
+      <div class="que-mejoro">
+        <div class="que-mejoro-label">¿Qué mejoró?</div>
+        <div class="tags">
+          <span class="tag">Rol de experto en calidad</span>
+          <span class="tag">Estructura del documento definida</span>
+          <span class="tag">Formato de código especificado</span>
+          <span class="tag">Longitud máxima acotada</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- P6 -->
+  <div class="pair-card">
+    <div class="pair-head" onclick="toggle(this)">
+      <span class="p-num">6</span>
+      <span class="p-title">Análisis de proveedor</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="pair-body">
+      <div class="prompts-grid">
+        <div class="prompt-col">
+          <div class="col-label bad-lbl"><span class="dot dot-bad"></span>Prompt BASE</div>
+          <div class="prompt-box-wrap bad">
+            <div class="copy-bar"><button class="copy-btn" onclick="copyPrompt('b6',this)">Copiar</button></div>
+            <div class="prompt-box bad" id="b6">Tengo un proveedor que en 2024 nos hizo 48 pedidos, de los que 17 llegaron tarde y tuvimos 7 incidencias de calidad. El precio está un 8% por encima del mercado. ¿Es un buen proveedor?</div>
+          </div>
+        </div>
+        <div class="prompt-col">
+          <div class="col-label good-lbl"><span class="dot dot-good"></span>Prompt MEJORADO</div>
+          <div class="prompt-box-wrap good">
+            <div class="copy-bar"><button class="copy-btn" onclick="copyPrompt('g6',this)">Copiar</button></div>
+            <div class="prompt-box good" id="g6">Actúa como un analista de compras logísticas. Voy a darte el histórico de entregas de un proveedor del último año.
+
+Datos del proveedor "Embalajes Norte SL" (2024):
+---
+Pedidos totales: 48
+Entregas puntuales (±1 día): 31
+Entregas con retraso 2-5 días: 12
+Entregas con retraso >5 días: 5
+Incidencias de calidad documentadas: 7
+Tasa de cumplimiento de cantidad: 94%
+Precio medio vs mercado: +8%
+---
+
+Evalúa este proveedor en estas 4 dimensiones (nota 1-10 con justificación):
+1. Fiabilidad de entrega
+2. Calidad del producto
+3. Competitividad de precio
+4. Riesgo operativo
+
+Finaliza con una recomendación: Mantener / Renegociar / Buscar alternativa. Justifica en 2 frases.</div>
+          </div>
+        </div>
+      </div>
+      <div class="que-mejoro">
+        <div class="que-mejoro-label">¿Qué mejoró?</div>
+        <div class="tags">
+          <span class="tag">Datos estructurados y delimitados</span>
+          <span class="tag">Dimensiones de evaluación definidas</span>
+          <span class="tag">Nota + justificación pedidos</span>
+          <span class="tag">Decisión acotada a 3 opciones</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- P7 -->
+  <div class="pair-card">
+    <div class="pair-head" onclick="toggle(this)">
+      <span class="p-num">7</span>
+      <span class="p-title">Reporting semanal de almacén</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="pair-body">
+      <div class="prompts-grid">
+        <div class="prompt-col">
+          <div class="col-label bad-lbl"><span class="dot dot-bad"></span>Prompt BASE</div>
+          <div class="prompt-box-wrap bad">
+            <div class="copy-bar"><button class="copy-btn" onclick="copyPrompt('b7',this)">Copiar</button></div>
+            <div class="prompt-box bad" id="b7">Hazme un informe de esta semana del almacén: recibimos 1.240 líneas, expedimos 1.087, tuvimos 12 incidencias y la ocupación subió al 78%.</div>
+          </div>
+        </div>
+        <div class="prompt-col">
+          <div class="col-label good-lbl"><span class="dot dot-good"></span>Prompt MEJORADO</div>
+          <div class="prompt-box-wrap good">
+            <div class="copy-bar"><button class="copy-btn" onclick="copyPrompt('g7',this)">Copiar</button></div>
+            <div class="prompt-box good" id="g7">Genera un informe ejecutivo semanal de operaciones de almacén para enviar al director de operaciones.
+
+Datos de la semana 23 (del 2 al 6 junio 2025):
+---
+Líneas recibidas: 1.240 | Líneas expedidas: 1.087 | Devoluciones procesadas: 43
+Tasa de error picking: 0,8% | Objetivo: &lt;1,5%
+Incidencias registradas: 12 (3 críticas, 9 menores)
+Ocupación del almacén: 78% | Semana anterior: 74%
+Referencias con rotura de stock: 2 (REF-002, REF-008)
+---
+
+Formato del informe:
+1. Resumen ejecutivo (3 líneas máximo)
+2. KPIs clave vs objetivo (tabla)
+3. Alertas y riesgos (solo si los hay)
+4. Acciones en curso (bullet points)
+
+Tono: directo, para un directivo que lee en 2 minutos. Sin tecnicismos.</div>
+          </div>
+        </div>
+      </div>
+      <div class="que-mejoro">
+        <div class="que-mejoro-label">¿Qué mejoró?</div>
+        <div class="tags">
+          <span class="tag">Destinatario definido</span>
+          <span class="tag">Datos delimitados y completos</span>
+          <span class="tag">Secciones del informe especificadas</span>
+          <span class="tag">Tono y tiempo de lectura acotados</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- P8 -->
+  <div class="pair-card">
+    <div class="pair-head" onclick="toggle(this)">
+      <span class="p-num">8</span>
+      <span class="p-title">Formación de operarios</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="pair-body">
+      <div class="prompts-grid">
+        <div class="prompt-col">
+          <div class="col-label bad-lbl"><span class="dot dot-bad"></span>Prompt BASE</div>
+          <div class="prompt-box-wrap bad">
+            <div class="copy-bar"><button class="copy-btn" onclick="copyPrompt('b8',this)">Copiar</button></div>
+            <div class="prompt-box bad" id="b8">Explica cómo funciona el picking con terminal de radiofrecuencia para un operario nuevo.</div>
+          </div>
+        </div>
+        <div class="prompt-col">
+          <div class="col-label good-lbl"><span class="dot dot-good"></span>Prompt MEJORADO</div>
+          <div class="prompt-box-wrap good">
+            <div class="copy-bar"><button class="copy-btn" onclick="copyPrompt('g8',this)">Copiar</button></div>
+            <div class="prompt-box good" id="g8">Eres un formador de operarios de almacén con experiencia en onboarding.
+
+Crea un guión de explicación del proceso de picking por voz para un operario que empieza hoy su primer día, usando un terminal de radiofrecuencia (RF).
+
+Requisitos:
+- Lenguaje muy sencillo, sin tecnicismos. Si usas un término técnico, explícalo.
+- Incluye los 5 pasos del ciclo de picking: recibir orden → localizar → coger → confirmar → depositar
+- Añade qué hacer en cada uno de estos casos: ubicación vacía, cantidad insuficiente, código de barras ilegible
+- Duración estimada de la explicación verbal: 5 minutos
+- Termina con 3 preguntas de verificación para comprobar que el operario lo ha entendido</div>
+          </div>
+        </div>
+      </div>
+      <div class="que-mejoro">
+        <div class="que-mejoro-label">¿Qué mejoró?</div>
+        <div class="tags">
+          <span class="tag">Audiencia muy específica</span>
+          <span class="tag">Casos edge definidos</span>
+          <span class="tag">Duración del output acotada</span>
+          <span class="tag">Mecanismo de verificación pedido</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AVANZADO -->
+  <div class="section-divider" style="margin-top:40px;">
+    <span class="section-divider-label">Prompts avanzados — Si vas rápido</span>
+    <div class="section-divider-line"></div>
+  </div>
+
+  <div class="avz-card">
+    <div class="avz-head" onclick="toggleAvz(this)">
+      <span class="p-num">A1</span>
+      <span class="p-title">Chain of thought + few-shot: seguridad logística</span>
+      <span class="avz-tag">Avanzado</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="avz-body">
+      <div class="prompt-box-wrap" style="margin-top:14px;">
+        <div class="copy-bar"><button class="copy-btn" onclick="copyPrompt('a1',this)">Copiar</button></div>
+        <div class="prompt-box" id="a1">Eres un experto en seguridad logística. Antes de responder, razona paso a paso siguiendo este esquema:
+1. ¿Qué norma aplica?
+2. ¿Cuál es el riesgo principal?
+3. ¿Qué acción correctiva es proporcional?
+
+Ejemplo resuelto:
+Situación: "Operario trabaja sin chaleco reflectante en zona de AGVs"
+1. Norma: RD 773/1997 sobre EPI + normativa interna de zona restringida
+2. Riesgo: colisión no detectada por AGV (zona de alta velocidad)
+3. Acción: parada inmediata de actividad + formación reforzada + revisión de acceso a zona
+
+Ahora aplica el mismo esquema a esta situación:
+"Se detecta que un palé con productos químicos está almacenado en la misma zona que alimentos, sin separación física."</div>
+      </div>
+      <div class="avz-meta">Técnica demostrada</div>
+      <div class="avz-desc">Chain of thought explícito + ejemplo resuelto (few-shot). La IA razona en pasos antes de responder, lo que mejora la calidad del análisis.</div>
+    </div>
+  </div>
+
+  <div class="avz-card">
+    <div class="avz-head" onclick="toggleAvz(this)">
+      <span class="p-num">A2</span>
+      <span class="p-title">Meta-prompt: pide a la IA que mejore tu prompt</span>
+      <span class="avz-tag">Avanzado</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="avz-body">
+      <div class="prompt-box-wrap" style="margin-top:14px;">
+        <div class="copy-bar"><button class="copy-btn" onclick="copyPrompt('a2',this)">Copiar</button></div>
+        <div class="prompt-box" id="a2">Eres un experto en prompt engineering para aplicaciones empresariales.
+
+Este es un prompt que uso actualmente para analizar incidencias de almacén:
+---
+[PEGA AQUÍ TU PROMPT ACTUAL]
+---
+
+Analiza sus debilidades y reescríbelo aplicando las mejores prácticas:
+1. Especifica el rol y contexto que falta
+2. Añade delimitadores donde corresponda
+3. Define el formato de salida
+4. Incluye instrucciones para casos edge
+5. Añade una instrucción de calibración de longitud
+
+Devuelve: (a) análisis de debilidades del original y (b) versión mejorada lista para usar.</div>
+      </div>
+      <div class="avz-meta">Técnica demostrada</div>
+      <div class="avz-desc">Usar la propia IA para mejorar tus prompts. Muy útil para llevarse algo práctico al trabajo desde hoy.</div>
+    </div>
+  </div>
+
+  <div class="avz-card">
+    <div class="avz-head" onclick="toggleAvz(this)">
+      <span class="p-num">A3</span>
+      <span class="p-title">Extracción estructurada de un albarán</span>
+      <span class="avz-tag">Avanzado</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="avz-body">
+      <div class="prompt-box-wrap" style="margin-top:14px;">
+        <div class="copy-bar"><button class="copy-btn" onclick="copyPrompt('a3',this)">Copiar</button></div>
+        <div class="prompt-box" id="a3">Extrae la información del siguiente albarán y devuélvela en formato JSON válido con esta estructura exacta:
+{
+  "numero_albaran": "",
+  "fecha": "DD/MM/YYYY",
+  "proveedor": {"nombre": "", "cif": ""},
+  "lineas": [
+    {"referencia": "", "descripcion": "", "cantidad_pedida": 0, "cantidad_entregada": 0, "precio_unitario": 0.00}
+  ],
+  "total_lineas": 0,
+  "incidencias": []
+}
+
+Si algún campo no está en el documento, usa null.
+Si hay discrepancia entre cantidad pedida y entregada, añádela al array "incidencias".
+
+Albarán:
+---
+[PEGAR TEXTO DEL ALBARÁN AQUÍ]
+---
+
+Responde ÚNICAMENTE con el JSON. Sin explicaciones adicionales.</div>
+      </div>
+      <div class="avz-meta">Técnica demostrada</div>
+      <div class="avz-desc">Extracción estructurada de documentos no estructurados. Muy aplicable a automatización de procesos administrativos en logística.</div>
+    </div>
+  </div>
+
+  <!-- 6 TÉCNICAS -->
+  <div class="tecnicas-box">
+    <h3>🎯 Las 6 técnicas — úsalas en la Ronda 2</h3>
+    <div class="tecnicas-grid">
+      <div class="tecnica">
+        <span class="tecnica-num">1</span>
+        <div class="tecnica-content"><strong>Da contexto</strong><span>Quién eres, tu empresa, tu sector</span></div>
+      </div>
+      <div class="tecnica">
+        <span class="tecnica-num">2</span>
+        <div class="tecnica-content"><strong>Define el rol</strong><span>"Actúa como…" para especializar la respuesta</span></div>
+      </div>
+      <div class="tecnica">
+        <span class="tecnica-num">3</span>
+        <div class="tecnica-content"><strong>Especifica el formato</strong><span>Lista, tabla, pasos, informe de 1 página…</span></div>
+      </div>
+      <div class="tecnica">
+        <span class="tecnica-num">4</span>
+        <div class="tecnica-content"><strong>Pon restricciones</strong><span>"Sin programación", "máximo 5 pasos"…</span></div>
+      </div>
+      <div class="tecnica">
+        <span class="tecnica-num">5</span>
+        <div class="tecnica-content"><strong>Divide en pasos</strong><span>1) analiza, 2) propón, 3) prioriza</span></div>
+      </div>
+      <div class="tecnica">
+        <span class="tecnica-num">6</span>
+        <div class="tecnica-content"><strong>Itera</strong><span>Un prompt es una conversación, no una sola pregunta</span></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>Prompt Engineering · Ejercicio 1 — Taller logístico</footer>
+
+<script>
+function toggle(head) {
+  const body = head.nextElementSibling;
+  const ch = head.querySelector('.chevron');
+  body.classList.toggle('open');
+  ch.classList.toggle('open');
+}
+function toggleAvz(head) {
+  const body = head.nextElementSibling;
+  const ch = head.querySelector('.chevron');
+  body.classList.toggle('open');
+  ch.classList.toggle('open');
+}
+function copyPrompt(id, btn) {
+  const el = document.getElementById(id);
+  const text = (el.innerText || el.textContent).trim();
+  navigator.clipboard.writeText(text).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  }).finally ? navigator.clipboard.writeText(text).then(ok, ok) : ok();
+  function ok() {
+    btn.textContent = '✓ Copiado';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copiar'; btn.classList.remove('copied'); }, 2000);
+  }
+  // Simpler fallback
+  btn.textContent = '✓ Copiado';
+  btn.classList.add('copied');
+  setTimeout(() => { btn.textContent = 'Copiar'; btn.classList.remove('copied'); }, 2000);
+}
+</script>
+</body>
+</html>
