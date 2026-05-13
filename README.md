@@ -26,8 +26,12 @@ Documentos adjuntos para el curso de IA en almacenes 2026
  
 - Ejercicio grupal aplicado  
  [Plantilla ejercicio](plantillaEjercicio1.pptx)  
- 
  [excel referencias](EULEN_Catalogo_Referencias_200.xlsx)
+ 
+  
+  
+  ## KPI
+  [carga KPI](dashboard-kpi-gemini_4.html)
  
 ## DIA 2:
  - Prompts  
