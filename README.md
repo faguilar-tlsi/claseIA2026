@@ -29,9 +29,6 @@ Documentos adjuntos para el curso de IA en almacenes 2026
  [excel referencias](EULEN_Catalogo_Referencias_200.xlsx)
  
   
-  
-  ## KPI
-  [carga KPI](dashboard-kpi-gemini_4.html)
  
 ## DIA 2:
  - Prompts  
@@ -40,7 +37,9 @@ Documentos adjuntos para el curso de IA en almacenes 2026
  [Normativa seguridad](normativa_seguridad.pdf)  
  [Procedimiento almacén](procedimiento_almacen.pdf)
  - Diseño de un chatbot de almacén básico  
- [Ejercicio](ejercicio_chatbot_almacen.html)
+ [Ejercicio](ejercicio_chatbot_almacen.html)  
+ - Ejemplo de vibeCoding + KPI  
+  [carga KPI](dashboard-kpi-gemini_4.html)
  - Demo MCP Server  
  [Prompt consulta simple](promp_mcp_1.txt)  
  [Prompt prediccion demanda](prompt_mcp_prediccion.txt)  
