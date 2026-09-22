@@ -232,7 +232,7 @@ details .details-body { padding: 14px; }
   </details>
 
   <div class="footer">
-    Ejemplo didáctico para cursos de gestión logística e IA · Conecta con la API de Anthropic (claude-sonnet-4-20250514) · La API key se usa solo localmente en tu navegador
+    Ejemplo didáctico para cursos de gestión logística e IA · Conecta con la API de Anthropic (claude-sonnet-5) · La API key se usa solo localmente en tu navegador
   </div>
 </div>
 
@@ -431,7 +431,7 @@ async function analyze() {
         'anthropic-dangerous-direct-browser-access': 'true'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-5',
         max_tokens: 1000,
         system: 'Eres un analista experto en operaciones logísticas y almacenes. Analizas KPIs y explicas al responsable del almacén qué está pasando y qué hacer. Eres directo, práctico y concreto. Conectas los KPIs entre sí cuando hay relación causal. No usas jerga innecesaria.',
         messages: [{ role: 'user', content: userMsg }]

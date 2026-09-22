@@ -241,7 +241,7 @@ tr:hover td { background: var(--bg2); }
   </div>
 
   <div class="footer">
-    Ejemplo didáctico para cursos de gestión logística e IA · Conecta con la API de Anthropic (claude-sonnet-4-20250514) · La API key se usa solo localmente en tu navegador
+    Ejemplo didáctico para cursos de gestión logística e IA · Conecta con la API de Anthropic (claude-sonnet-5) · La API key se usa solo localmente en tu navegador
   </div>
 </div>
 
@@ -413,7 +413,7 @@ async function askLLM() {
         'anthropic-dangerous-direct-browser-access': 'true'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-5',
         max_tokens: 1200,
         system: `Eres el sistema de optimización de rutas de picking de un almacén logístico. Responde SIEMPRE y ÚNICAMENTE con JSON válido, sin bloques de código, sin texto extra.`,
         messages: [{ role: 'user', content: userMsg }]
